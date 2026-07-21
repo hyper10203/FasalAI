@@ -11,21 +11,57 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.ROBOFLOW_API_KEY;
-  if (!apiKey) {
-    return res.status(400).json({ error: 'ROBOFLOW_API_KEY not configured in environment variables' });
-  }
-
   try {
-    const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${apiKey}`;
-    const response = await fetch(roboflowUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: req.body
-    });
+    let imageBuffer;
+    if (req.body.image) {
+      const b64Data = req.body.image.replace(/^data:image\/\w+;base64,/, '');
+      imageBuffer = Buffer.from(b64Data, 'base64');
+    } else if (typeof req.body === 'string' && req.body.startsWith('data:image')) {
+      const b64Data = req.body.replace(/^data:image\/\w+;base64,/, '');
+      imageBuffer = Buffer.from(b64Data, 'base64');
+    } else {
+      imageBuffer = Buffer.from(req.body, 'base64');
+    }
 
-    const data = await response.json();
-    return res.status(response.status).json(data);
+    // Primary: Hugging Face Plant Disease Model
+    const hfUrl = 'https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification';
+    const hfHeaders = { 'Content-Type': 'application/octet-stream' };
+    if (process.env.HF_TOKEN) {
+      hfHeaders['Authorization'] = `Bearer ${process.env.HF_TOKEN}`;
+    }
+
+    const hfResponse = await fetch(hfUrl, {
+      method: 'POST',
+      headers: hfHeaders,
+      body: imageBuffer
+    }).catch(() => null);
+
+    if (hfResponse && hfResponse.ok) {
+      const data = await hfResponse.json();
+      if (Array.isArray(data) && data.length && data[0].label) {
+        return res.status(200).json({
+          predictions: data.map(d => ({ class: d.label, confidence: d.score || 0 })),
+          source: 'hf'
+        });
+      }
+    }
+
+    // Secondary: Roboflow Model (if key set)
+    if (process.env.ROBOFLOW_API_KEY) {
+      const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${process.env.ROBOFLOW_API_KEY}`;
+      const rfResponse = await fetch(roboflowUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: imageBuffer.toString('base64')
+      }).catch(() => null);
+
+      if (rfResponse && rfResponse.ok) {
+        const rfData = await rfResponse.json();
+        return res.status(200).json(rfData);
+      }
+    }
+
+    return res.status(200).json({ status: 'fallback', message: 'Use client heuristics' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
