@@ -6090,9 +6090,10 @@ LANGUAGE INSTRUCTION: ${langInstructions[clLang] || langInstructions.en}
 ${buildFarmContext()}`;
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),30000);
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    
+    let res = await fetch('/api/chat', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_API_KEY},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'llama-3.1-8b-instant',
         messages:[{role:'system',content:systemMsg},{role:'user',content:msg}],
@@ -6100,13 +6101,34 @@ ${buildFarmContext()}`;
         temperature:0.7
       }),
       signal:controller.signal
-    });
+    }).catch(() => null);
+
+    if(!res || !res.ok){
+      if(GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE' && GROQ_API_KEY.length >= 10){
+        res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_API_KEY},
+          body:JSON.stringify({
+            model:'llama-3.1-8b-instant',
+            messages:[{role:'system',content:systemMsg},{role:'user',content:msg}],
+            max_tokens:300,
+            temperature:0.7
+          }),
+          signal:controller.signal
+        });
+      }
+    }
+
     clearTimeout(timer);
     typing.remove();
-    if(!res.ok){
-      const errData=await res.json().catch(()=>({}));
-      throw new Error('Groq API error '+res.status+': '+(errData.error?.message||'unknown'));
+
+    if(!res || !res.ok){
+      const am=document.createElement('div'); am.className='message ai-message';
+      am.textContent=genLocalResponse(msg);
+      box.appendChild(am); box.scrollTop=box.scrollHeight;
+      return;
     }
+
     const data=await res.json();
     const reply=(data.choices?.[0]?.message?.content||'No response').trim();
     const am=document.createElement('div');
@@ -6597,8 +6619,16 @@ async function pdxDetectRemote(dataUrl, onStage){
       }
     }catch(e){ console.warn('PDX HF model failed:',e.message); }
   }
-  // Roboflow direct model
-  if(typeof ROBOFLOW_API_KEY!=='undefined'&&ROBOFLOW_API_KEY&&ROBOFLOW_API_KEY!=='YOUR_ROBOFLOW_KEY_HERE'){
+  // Roboflow via serverless proxy /api/pdx or direct client key
+  try{
+    const res=await fetch('/api/pdx',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b64,signal:AbortSignal.timeout(25000)}).catch(()=>null);
+    if(res && res.ok){
+      const d=await res.json();const preds=(d.predictions||[]).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+      if(preds.length) return {topK:preds.map(p=>({label:p.class||'',score:p.confidence||0})),source:'ai'};
+    }
+  }catch(e){}
+
+  if(typeof ROBOFLOW_API_KEY!=='undefined'&&ROBOFLOW_API_KEY&&ROBOFLOW_API_KEY!=='YOUR_ROBOFLOW_API_KEY_HERE'&&ROBOFLOW_API_KEY!=='YOUR_ROBOFLOW_KEY_HERE'){
     try{
       const res=await fetch(ROBOFLOW_DIRECT_URL+'?api_key='+ROBOFLOW_API_KEY,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b64,signal:AbortSignal.timeout(25000)});
       if(res.ok){
