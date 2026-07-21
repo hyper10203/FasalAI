@@ -2853,6 +2853,130 @@ button, a, input, select, .nav-item, .ctrl-btn {
 }
 
 </style>
+
+<style>
+
+/* ── LOGIN PAGE FIXES ── */
+#login-page {
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.login-top-controls {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  #login-page {
+    padding-top: max(80px, calc(60px + env(safe-area-inset-top)));
+    padding-bottom: 40px;
+    align-items: flex-start;
+  }
+  .login-card {
+    margin-top: 10px !important;
+    width: calc(100% - 32px) !important;
+    max-width: 420px !important;
+  }
+}
+
+
+/* ── CHART & CARD LEGEND FIXES ── */
+.card, .stat-card, .chart-card {
+  overflow: visible !important;
+}
+.card-body {
+  padding: clamp(16px, 2.5vw, 24px) !important;
+  overflow: visible !important;
+}
+.chart-container, canvas {
+  max-width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+/* Ensure Chart.js pie chart legends have bottom padding */
+.card-body canvas {
+  padding-bottom: 12px;
+}
+
+
+/* ── BOTTOM NAV FIXES (Dark & Light theme compatible) ── */
+.bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  background: var(--card-bg, #281d12) !important;
+  border-top: 1px solid var(--border, #46341f) !important;
+  padding: 8px 4px max(10px, env(safe-area-inset-bottom)) 4px !important;
+  box-shadow: 0 -6px 20px rgba(0,0,0,0.2) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+.bottom-nav-items {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+}
+.bnav-item {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding: 6px 2px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-mid, #cbb99d) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  cursor: pointer !alignment;
+  transition: color 0.2s, transform 0.2s !important;
+}
+.bnav-item i {
+  font-size: 17px !important;
+}
+.bnav-item.active {
+  color: var(--green-500, #5aa83c) !important;
+  font-weight: 700 !important;
+}
+[data-theme="light"] .bottom-nav {
+  background: #fffdf8 !important;
+  border-top-color: #ddcdb4 !important;
+}
+[data-theme="light"] .bnav-item {
+  color: #6d5940 !important;
+}
+[data-theme="light"] .bnav-item.active {
+  color: #35722a !important;
+}
+
+
+/* ── TOPBAR FULL WIDTH FIXES ── */
+.topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 500 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: var(--card-bg) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.topbar-title {
+  font-size: clamp(16px, 2.5vw, 22px) !important;
+}
+
+</style>
 </head>
 <body>
 
