@@ -45,7 +45,10 @@ FasalAI/
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Live Demo & Deployment
+
+- 🌾 **Live Web App**: [https://fasalai-app.vercel.app](https://fasalai-app.vercel.app)
+- 🌐 **Alternative Domains**: [https://fasalai-official.vercel.app](https://fasalai-official.vercel.app) | [https://fasalai-agri.vercel.app](https://fasalai-agri.vercel.app)
 
 Simply serve `index.html` using any standard HTTP server (e.g. VS Code Live Server or `npx serve`).
 
