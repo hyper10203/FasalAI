@@ -13,17 +13,17 @@ export default async function handler(req, res) {
 
   try {
     let imageBuffer;
-    if (req.body.image) {
-      const b64Data = req.body.image.replace(/^data:image\/\w+;base64,/, '');
-      imageBuffer = Buffer.from(b64Data, 'base64');
-    } else if (typeof req.body === 'string' && req.body.startsWith('data:image')) {
+    if (typeof req.body === 'string') {
       const b64Data = req.body.replace(/^data:image\/\w+;base64,/, '');
       imageBuffer = Buffer.from(b64Data, 'base64');
+    } else if (req.body && req.body.image) {
+      const b64Data = req.body.image.replace(/^data:image\/\w+;base64,/, '');
+      imageBuffer = Buffer.from(b64Data, 'base64');
     } else {
-      imageBuffer = Buffer.from(req.body, 'base64');
+      imageBuffer = req.body;
     }
 
-    // Primary: Hugging Face Plant Disease Model
+    // HuggingFace Plant Disease Identification Model
     const hfUrl = 'https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification';
     const hfHeaders = { 'Content-Type': 'application/octet-stream' };
     if (process.env.HF_TOKEN) {
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Secondary: Roboflow Model (if key set)
+    // Roboflow Direct Model (if key available)
     if (process.env.ROBOFLOW_API_KEY) {
       const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${process.env.ROBOFLOW_API_KEY}`;
       const rfResponse = await fetch(roboflowUrl, {
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ status: 'fallback', message: 'Use client heuristics' });
+    return res.status(200).json({ status: 'fallback' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
