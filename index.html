@@ -2,7 +2,7 @@
 <!-- saved from url=(0029)https://soilscope.vercel.app/ -->
 <html lang="en" data-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <title>FasalAI | Agricultural Intelligence</title>
 
 <!-- Leaflet CSS -->
@@ -2687,6 +2687,171 @@ body{background-attachment:fixed}
 }
 #tut-fab:hover{transform:scale(1.12) rotate(12deg)}
 @media(max-width:768px){#tut-fab{bottom:96px;right:16px}}
+
+/* ════════════════════════════════════════════════════════════════════
+   UNIVERSAL RESPONSIVE & ASPECT RATIO SYSTEM (Mobile, Tablet, Desktop, 4K)
+   ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* Touch & Smooth Scaling Defaults */
+html, body {
+  min-height: 100dvh;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Aspect Ratio Utility Classes */
+.aspect-16-9 { aspect-ratio: 16 / 9; object-fit: cover; width: 100%; }
+.aspect-4-3  { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+.aspect-1-1  { aspect-ratio: 1 / 1; object-fit: cover; }
+.aspect-square { aspect-ratio: 1 / 1; }
+
+/* Responsive Container Cap for Large Screens (4K & Ultra-wide) */
+@media (min-width: 1440px) {
+  .main-content, .topbar, #login-page {
+    max-width: 1720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Fluid Resizing Grids */
+.dashboard-grid, .grid-auto, .cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: clamp(12px, 2vw, 24px);
+}
+
+/* Touch Target Optimization */
+button, a, input, select, .nav-item, .ctrl-btn {
+  min-height: 40px;
+  touch-action: manipulation;
+}
+
+/* ── TABLET BREAKPOINT (max-width: 1024px) ── */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-w: 220px;
+  }
+  .display { font-size: clamp(24px, 3.5vw, 34px); }
+  .cards-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+}
+
+/* ── MOBILE BREAKPOINT (max-width: 768px) ── */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: max(68px, calc(60px + var(--sab)));
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+  }
+  
+  /* Mobile Header & Sidebar adjustment */
+  #topbar {
+    padding: 12px 16px;
+    padding-top: max(12px, var(--sat));
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100dvh;
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 4px 0 25px rgba(0,0,0,0.5);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(280px);
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 14px !important;
+  }
+
+  /* Full-width responsive cards */
+  .card, .stat-card, .chart-card {
+    border-radius: var(--radius-md);
+    padding: 14px !important;
+    width: 100% !important;
+  }
+
+  /* Flexible Map Container */
+  #map, .leaflet-container {
+    height: clamp(250px, 45vh, 400px) !important;
+    min-height: 250px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Bottom Navigation Bar Safe Inset */
+  #bottom-nav, .bottom-nav {
+    padding-bottom: max(8px, var(--sab));
+  }
+
+  /* Modal responsiveness */
+  .modal-content, .dialog-box {
+    width: 94% !important;
+    max-width: 500px !important;
+    margin: 12px auto !important;
+    max-height: 88dvh !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* ── SMALL MOBILE BREAKPOINT (max-width: 480px) ── */
+@media (max-width: 480px) {
+  h1 { font-size: 20px !important; }
+  h2 { font-size: 17px !important; }
+  h3 { font-size: 15px !important; }
+  
+  .btn, .login-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+
+  /* Horizontal scrolling for tab bars on small screens */
+  .tab-bar, .tabs-header, .nav-tabs {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .price-cards, .weather-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── ASPECT RATIO & ORIENTATION OPTIMIZATIONS ── */
+@media (max-aspect-ratio: 1/1) {
+  /* Portrait phones & tablets: stack split view containers */
+  .split-view, .flex-row-mobile-column {
+    flex-direction: column !important;
+  }
+}
+
+@media (min-aspect-ratio: 2/1) {
+  /* Ultra-wide landscape views: compact vertical paddings */
+  .main-content {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -7666,5 +7831,35 @@ document.addEventListener('DOMContentLoaded',()=>{
   updateCarousel();
 });
 </script>
+
+<script>
+/* ── Universal Window Resize & Orientation Handler for Leaflet & Charts ── */
+(function() {
+  function handleResize() {
+    // 1. Dynamic Viewport Height Fix
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+    // 2. Leaflet Map Invalidation
+    if (typeof map !== 'undefined' && map && typeof map.invalidateSize === 'function') {
+      setTimeout(() => { map.invalidateSize(); }, 200);
+    }
+
+    // 3. Chart.js Invalidation
+    if (typeof Chart !== 'undefined' && Chart.instances) {
+      Object.keys(Chart.instances).forEach(key => {
+        try { Chart.instances[key].resize(); } catch(e){}
+      });
+    }
+  }
+
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(handleResize, 300);
+  });
+  document.addEventListener('DOMContentLoaded', handleResize);
+})();
+</script>
+
 </body>
 </html>
