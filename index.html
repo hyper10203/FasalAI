@@ -6465,8 +6465,14 @@ function pdxGetLocalModel() {
         const res = await fetch('assets/models/class_names.json');
         pdxClassNames = await res.json();
         
-        // Load ONNX model
-        const session = await ort.InferenceSession.create('assets/models/convnext_tiny_plantdisease.onnx', { executionProviders: ['wasm'] });
+        // Load ONNX model with CDN fallback
+        let session;
+        try {
+            session = await ort.InferenceSession.create('assets/models/convnext_tiny_plantdisease.onnx', { executionProviders: ['wasm'] });
+        } catch(e) {
+            console.log('Loading ONNX model from GitHub LFS CDN...');
+            session = await ort.InferenceSession.create('https://media.githubusercontent.com/media/hyper10203/FasalAI/main/assets/models/convnext_tiny_plantdisease.onnx', { executionProviders: ['wasm'] });
+        }
         return session;
     })();
     return pdxSessionPromise;
