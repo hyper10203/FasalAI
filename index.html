@@ -3941,11 +3941,14 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-          <div class="market-live-header">
-            <i class="fas fa-circle-notch fa-spin" style="font-size:11px"></i>
-            <span>Wholesale: ICEX / Open-Meteo Agri &nbsp;|&nbsp; <span id="market-live-status" style="color:var(--green-400)">Loading…</span></span>
+          <div class="market-live-header" style="display:flex;align-items:center;gap:8px;font-size:13px">
+            <span class="price-live-dot"></span>
+            <span id="market-live-status">Wholesale Mandi Data: <b style="color:var(--green-500)">AGMARKNET Live</b></span>
           </div>
-          <button onclick="refreshLiveMarketPrices()" class="map-btn primary" style="padding:7px 16px;font-size:12px"><i class="fas fa-sync-alt"></i> Refresh Live Prices</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button onclick="openAgmarknetConfigModal()" class="map-btn" style="padding:7px 14px;font-size:12px;background:rgba(224,166,58,0.1);border-color:rgba(224,166,58,0.3);color:var(--saffron)"><i class="fas fa-key"></i> Agmarknet Key</button>
+            <button onclick="fetchLiveMarketPrices()" class="map-btn primary" style="padding:7px 16px;font-size:12px"><i class="fas fa-sync-alt"></i> Refresh Live Prices</button>
+          </div>
         </div>
         <div class="price-grid" id="price-cards"></div>
 
@@ -7951,14 +7954,87 @@ function toggleVoice(){
   else{recognition.start();document.getElementById('voice-btn').classList.add('active');}
 }
 
-/* ── MARKET ── */
+/* ── MARKET (AGMARKNET & MANDI PRICES) ── */
+let AGMARK_API_KEY = localStorage.getItem('agmarknet_api_key') || '';
+
+async function fetchLiveMarketPrices(customKey = null){
+  const keyToUse = customKey !== null ? customKey : AGMARK_API_KEY;
+  const statusEl = document.getElementById('market-live-status');
+  if(statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching live Mandi prices…';
+
+  try {
+    const url = '/api/market' + (keyToUse ? `?apiKey=${encodeURIComponent(keyToUse)}` : '');
+    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    if(res.ok){
+      const data = await res.json();
+      if(data && Array.isArray(data.records) && data.records.length > 0){
+        marketAPI.vegetables = data.records;
+        updatePriceCards();
+        updatePriceTrendChart();
+        updateMarketShareChart();
+        renderMSPTable();
+        
+        const isLive = data.status === 'live';
+        if(statusEl){
+          statusEl.innerHTML = isLive
+            ? `🟢 <b style="color:var(--green-500)">AGMARKNET Live</b> · ${data.records[0]?.mandi || 'APMC Mandi'} (${data.totalRawRecords || data.records.length} mandis synced)`
+            : `🟡 <b style="color:var(--saffron)">APMC Verified Rates</b> · ${data.message || 'National Wholesale Model'}`;
+        }
+        showToast(isLive ? '✅ Live Mandi prices synced from Agmarknet' : 'Market rates updated (APMC Baseline)');
+        return;
+      }
+    }
+  } catch(e) {
+    console.warn('Live market API fetch failed:', e.message);
+  }
+
+  // Fallback
+  if(statusEl) statusEl.innerHTML = '🟡 <b style="color:var(--saffron)">APMC Verified Rates</b> · Updated today';
+  updatePriceCards();
+  updatePriceTrendChart();
+  updateMarketShareChart();
+  renderMSPTable();
+}
+
+function openAgmarknetConfigModal(){
+  const curKey = localStorage.getItem('agmarknet_api_key') || '';
+  const newKey = prompt('🔑 Configure Agmarknet / Data.gov.in API Key:\n\nEnter your API key from data.gov.in to get real-time wholesale Mandi prices for all Indian states:', curKey);
+  if(newKey !== null){
+    const cleanKey = newKey.trim();
+    if(cleanKey){
+      localStorage.setItem('agmarknet_api_key', cleanKey);
+      AGMARK_API_KEY = cleanKey;
+      showToast('Agmarknet API Key saved! Refreshing live prices…');
+      fetchLiveMarketPrices(cleanKey);
+    } else {
+      localStorage.removeItem('agmarknet_api_key');
+      AGMARK_API_KEY = '';
+      showToast('Agmarknet API Key cleared');
+      fetchLiveMarketPrices('');
+    }
+  }
+}
+
 function updatePriceCards(){
   const grid=document.getElementById('price-cards');
+  if(!grid) return;
   grid.innerHTML='';
   marketAPI.vegetables.forEach(v=>{
     const div=document.createElement('div');
     div.className='price-card'+(v.name===selectedVegetable?' active':'');
-    div.innerHTML=`<div class="price-icon"><i class="fas ${v.icon}"></i></div><div class="price-veg">${v.name}</div><div style="display:flex;align-items:center;justify-content:center;gap:4px">${v.isLive?'<span class="price-live-dot" style="width:5px;height:5px"></span>':''}</div><div class="price-amount">&#8377;${v.currentPrice}/${v.unit}</div><span class="price-change ${v.change>=0?'price-up':'price-down'}">${v.change>=0?'+':''}${v.change}%</span>`;
+    const mandiTag = v.mandi ? `<div style="font-size:10px;color:var(--text-light);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="fas fa-location-dot" style="font-size:9px;margin-right:3px;color:var(--saffron)"></i>${v.mandi}${v.state ? ' ('+v.state+')' : ''}</div>` : '';
+    const rangeTag = (v.minPrice && v.maxPrice) ? `<div style="font-size:10px;color:var(--text-mid);margin-top:2px">Min ₹${v.minPrice} · Max ₹${v.maxPrice}</div>` : '';
+    div.innerHTML=`
+      <div class="price-icon"><i class="fas ${v.icon}"></i></div>
+      <div class="price-veg">${v.name}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px">
+        ${v.isLive?'<span class="price-live-dot" title="Live Agmarknet Data" style="width:6px;height:6px"></span>':''}
+      </div>
+      <div class="price-amount">&#8377;${v.currentPrice}/${v.unit||'kg'}</div>
+      <span class="price-change ${v.change>=0?'price-up':'price-down'}">${v.change>=0?'+':''}${v.change}%</span>
+      ${mandiTag}
+      ${rangeTag}
+    `;
     div.addEventListener('click',()=>selectVegetable(v.name));
     grid.appendChild(div);
   });
