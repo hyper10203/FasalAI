@@ -2,7 +2,7 @@
 <!-- saved from url=(0029)https://soilscope.vercel.app/ -->
 <html lang="en" data-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FasalAI | Agricultural Intelligence</title>
 
 <!-- Leaflet CSS -->
@@ -20,6 +20,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
   var fbDB = null;
   try {
@@ -2688,309 +2689,455 @@ body{background-attachment:fixed}
 #tut-fab:hover{transform:scale(1.12) rotate(12deg)}
 @media(max-width:768px){#tut-fab{bottom:96px;right:16px}}
 
-/* ════════════════════════════════════════════════════════════════════
-   UNIVERSAL RESPONSIVE & ASPECT RATIO SYSTEM (Mobile, Tablet, Desktop, 4K)
-   ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════
+   AUTH — Google / Email / Phone panes
+══════════════════════════════════════════════════════════════════ */
+.auth-pane{display:none;animation:authIn .32s var(--ease-pop)}
+.auth-pane.active{display:block}
+@keyframes authIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.auth-methods{display:flex;flex-direction:column;gap:11px}
+.auth-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px 16px;border-radius:var(--radius-sm);cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:14.5px;font-weight:600;
+  background:rgba(143,212,78,0.08);border:1px solid rgba(143,212,78,0.26);
+  color:var(--text-dark);transition:all .22s var(--ease-pop);
+  min-height:48px;
+}
+.auth-btn:hover{background:rgba(143,212,78,0.16);transform:translateY(-2px);box-shadow:0 8px 22px rgba(10,6,2,0.3)}
+.auth-btn:active{transform:translateY(0)}
+.auth-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.auth-btn svg{width:19px;height:19px;flex-shrink:0}
+.auth-btn i{font-size:16px;flex-shrink:0}
+.auth-btn.google{background:#fff;color:#1f1f1f;border-color:rgba(0,0,0,.12)}
+.auth-btn.google:hover{background:#f6f6f6}
+.auth-btn.primary{
+  background:linear-gradient(120deg,var(--green-600),var(--lime-600));
+  color:#0f1d09;border:none;box-shadow:0 8px 22px var(--lime-glow);margin-top:4px;
+}
+.auth-btn.primary:hover{filter:brightness(1.06)}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--text-light);font-size:12.5px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-back{
+  display:inline-flex;align-items:center;gap:7px;background:none;border:none;cursor:pointer;
+  color:var(--text-mid);font-family:'Inter',sans-serif;font-size:13px;padding:6px 0;margin-bottom:12px;
+  transition:color .2s;
+}
+.auth-back:hover{color:var(--lime)}
+.auth-links{display:flex;justify-content:space-between;gap:12px;margin-top:14px;font-size:13px;flex-wrap:wrap}
+.auth-links a{color:var(--text-mid);text-decoration:none}
+.auth-links a.accent{color:var(--lime);font-weight:600}
+.auth-links a:hover{text-decoration:underline}
+[data-theme="light"] .auth-btn{background:rgba(75,148,50,0.08);border-color:var(--border);color:var(--text-dark)}
+[data-theme="light"] .auth-btn.google{background:#fff;color:#1f1f1f}
 
-:root {
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sal: env(safe-area-inset-left, 0px);
-  --sar: env(safe-area-inset-right, 0px);
+/* ══════════════════════════════════════════════════════════════════
+   FARM PROFIT SIMULATOR
+══════════════════════════════════════════════════════════════════ */
+#farm-sim{
+  display:none;position:fixed;inset:0;z-index:9997;
+  background:rgba(8,5,2,0.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  align-items:center;justify-content:center;padding:20px;
+}
+#farm-sim.open{display:flex;animation:simFade .3s ease}
+@keyframes simFade{from{opacity:0}to{opacity:1}}
+.sim-card{
+  position:relative;width:100%;max-width:820px;max-height:92vh;overflow-y:auto;
+  background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);animation:simRise .42s var(--ease-pop);
+}
+@keyframes simRise{from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:none}}
+.sim-card::-webkit-scrollbar{width:6px}
+.sim-card::-webkit-scrollbar-thumb{background:var(--green-500);border-radius:3px}
+.sim-close{
+  position:absolute;top:14px;right:14px;z-index:5;width:38px;height:38px;border-radius:50%;
+  background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.16);color:#fff;
+  cursor:pointer;font-size:15px;transition:all .2s;
+}
+.sim-close:hover{background:#b91c1c;transform:rotate(90deg)}
+/* isometric field scene */
+.sim-scene{
+  position:relative;height:230px;overflow:hidden;
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  background:linear-gradient(180deg,#2b5a20 0%,#1d3a16 55%,#241a10 100%);
+  perspective:620px;
+}
+[data-theme="light"] .sim-scene{background:linear-gradient(180deg,#7fc45a 0%,#4b9432 55%,#8a5f37 100%)}
+.sim-sun{
+  position:absolute;top:22px;right:44px;width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle,#ffe98a,#e0a63a);
+  box-shadow:0 0 44px rgba(224,166,58,.75);animation:simSun 5s ease-in-out infinite;
+}
+@keyframes simSun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.06)}}
+.sim-plots{
+  position:absolute;left:50%;top:40%;z-index:2;display:grid;gap:5px;max-width:none;
+  transform:translate(-50%,-50%) rotateX(58deg) rotateZ(-42deg);
+  transform-style:preserve-3d;transition:transform .45s var(--ease-pop);
+}
+.sim-plot{
+  width:34px;height:34px;border-radius:5px;
+  background:linear-gradient(145deg,#5aa83c,#2b5a20);
+  box-shadow:0 3px 0 #14290f;animation:plotPop .45s var(--ease-pop) both;
+}
+.sim-plot.lush{background:linear-gradient(145deg,#8fd44e,#3c7d2c)}
+.sim-plot.poor{background:linear-gradient(145deg,#a9784a,#6b4a28);box-shadow:0 3px 0 #3a2716}
+@keyframes plotPop{from{opacity:0;transform:translateZ(-22px) scale(.4)}to{opacity:1;transform:none}}
+.sim-crop-badge{
+  position:absolute;left:18px;bottom:14px;z-index:3;display:flex;align-items:center;gap:12px;
+  max-width:calc(100% - 36px);
+  background:rgba(10,6,2,0.55);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.16);border-radius:var(--radius-md);padding:10px 15px;
+}
+.sim-crop-icon{width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0}
+.sim-crop-icon img{width:100%;height:100%;object-fit:cover}
+.sim-crop-meta h3{font-family:'Space Grotesk',sans-serif;font-size:18px;color:#fff;margin:0 0 2px}
+.sim-crop-meta span{font-size:11.5px;color:rgba(255,255,255,0.72)}
+.sim-match-chip{
+  display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:3px 9px;border-radius:999px;
+  background:rgba(143,212,78,0.2);color:#c8f59a;font-size:10.5px;font-weight:600;
+}
+.sim-body{padding:22px}
+.sim-controls{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px}
+.sim-ctrl label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:9px;font-size:13px;color:var(--text-mid)}
+.sim-ctrl label .val{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text-dark)}
+.sim-range{
+  width:100%;height:7px;border-radius:4px;appearance:none;-webkit-appearance:none;cursor:pointer;
+  background:linear-gradient(90deg,var(--green-500),var(--lime));outline:none;
+}
+.sim-range::-webkit-slider-thumb{
+  -webkit-appearance:none;width:23px;height:23px;border-radius:50%;background:#fff;
+  border:3px solid var(--green-600);box-shadow:0 2px 9px rgba(0,0,0,.32);cursor:grab;
+}
+.sim-range::-moz-range-thumb{
+  width:23px;height:23px;border-radius:50%;background:#fff;
+  border:3px solid var(--green-600);box-shadow:0 2px 9px rgba(0,0,0,.32);cursor:grab;
+}
+.sim-hint{display:block;margin-top:7px;font-size:11.5px;color:var(--text-light)}
+.sim-hero{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  padding:20px 22px;border-radius:var(--radius-md);margin-bottom:20px;
+  background:linear-gradient(120deg,rgba(90,168,60,0.16),rgba(143,212,78,0.08));
+  border:1px solid rgba(143,212,78,0.28);transition:all .4s;
+}
+.sim-hero.loss{background:linear-gradient(120deg,rgba(185,28,28,0.16),rgba(185,28,28,0.05));border-color:rgba(185,28,28,0.3)}
+.sim-hero-label{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-mid);font-weight:600}
+.sim-hero-num{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,6vw,40px);font-weight:700;color:var(--text-dark);line-height:1.1;margin:4px 0}
+.sim-hero.loss .sim-hero-num{color:#ef4444}
+.sim-hero-sub{font-size:12.5px;color:var(--text-light)}
+.sim-roi{text-align:right;flex-shrink:0}
+.sim-roi-num{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,30px);font-weight:700;color:var(--green-400)}
+.sim-hero.loss .sim-roi-num{color:#ef4444}
+.sim-roi-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light)}
+.sim-results{display:flex;flex-direction:column;gap:13px;margin-bottom:20px}
+.sim-bar-row{display:flex;align-items:center;gap:13px;transition:transform .3s var(--ease-pop)}
+.sim-bar-row.pop{transform:scale(1.025)}
+.sim-bar-icon{
+  width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;
+}
+.sim-bar-icon.yield{background:rgba(143,212,78,0.16);color:var(--lime)}
+.sim-bar-icon.rev{background:rgba(90,168,60,0.16);color:var(--green-400)}
+.sim-bar-icon.cost{background:rgba(224,166,58,0.16);color:var(--saffron)}
+.sim-bar-icon.profit{background:rgba(87,179,154,0.16);color:var(--sky)}
+.sim-bar-main{flex:1;min-width:0}
+.sim-bar-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.sim-bar-label{font-size:12.5px;color:var(--text-mid)}
+.sim-bar-value{font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:700;color:var(--text-dark)}
+.sim-bar-track{height:8px;border-radius:5px;background:var(--bg-2);overflow:hidden}
+.sim-bar-fill{height:100%;border-radius:5px;width:0;transition:width .65s var(--ease-pop)}
+.sim-bar-fill.yield{background:linear-gradient(90deg,var(--green-500),var(--lime))}
+.sim-bar-fill.rev{background:linear-gradient(90deg,var(--green-600),var(--green-400))}
+.sim-bar-fill.cost{background:linear-gradient(90deg,var(--saffron),var(--saffron-light))}
+.sim-bar-fill.profit{background:linear-gradient(90deg,var(--sky),var(--sky-light))}
+.sim-bar-fill.neg{background:linear-gradient(90deg,#b91c1c,#ef4444)!important}
+.sim-verdict{
+  display:flex;gap:13px;align-items:flex-start;padding:15px 17px;border-radius:var(--radius-md);
+  background:var(--bg-2);border:1px solid var(--border);margin-bottom:18px;
+}
+.sim-verdict-icon{font-size:22px;flex-shrink:0;animation:verdictPop .45s var(--ease-pop)}
+@keyframes verdictPop{from{transform:scale(0) rotate(-30deg)}to{transform:none}}
+.sim-verdict-text{font-size:13.5px;line-height:1.62;color:var(--text-mid)}
+.sim-verdict-text strong{color:var(--text-dark)}
+.sim-breakdown{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:11px;margin-bottom:16px}
+.sim-chip{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px}
+.sim-chip-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:4px;font-weight:600}
+.sim-chip-val{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text-dark)}
+.sim-disclaimer{display:flex;gap:9px;font-size:11.5px;line-height:1.6;color:var(--text-light)}
+.sim-disclaimer i{margin-top:2px;flex-shrink:0}
+.sim-coin{position:fixed;z-index:9999;pointer-events:none;animation:coinFly 1.05s ease-out forwards}
+@keyframes coinFly{
+  0%{opacity:1;transform:translate(0,0) rotate(0) scale(1)}
+  100%{opacity:0;transform:translate(var(--cx),var(--cy)) rotate(var(--cr)) scale(.4)}
+}
+.podium-card,.other-crop-card{cursor:pointer}
+
+/* ══════════════════════════════════════════════════════════════════
+   SITE GUIDE (enhanced tutorial) — spotlight + narration card
+══════════════════════════════════════════════════════════════════ */
+#tut-card{max-width:360px;width:calc(100vw - 32px)}
+.tut-progress{height:4px;border-radius:3px;background:var(--bg-2);overflow:hidden;margin-bottom:14px}
+.tut-progress-fill{height:100%;background:linear-gradient(90deg,var(--green-500),var(--lime));width:0;transition:width .45s var(--ease-pop)}
+.tut-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
+  background:rgba(143,212,78,0.16);color:var(--lime);font-size:11px;font-weight:600;
+  margin-bottom:9px;letter-spacing:.4px;
+}
+#tut-hole{pointer-events:none}
+#tut-card{pointer-events:auto}
+/* while the guide is moving between pages, soften the spotlight so the
+   jump reads as one motion instead of a flicker */
+#tut-overlay.moving #tut-hole{opacity:0;transform:scale(1.04)}
+#tut-overlay.moving #tut-card{opacity:.55}
+#tut-hole,#tut-card{transition:all .42s var(--ease-pop),opacity .3s ease}
+#tut-fab{z-index:9999}
+
+/* ══════════════════════════════════════════════════════════════════
+   RESPONSIVE — phones, tablets, laptops, desktops
+══════════════════════════════════════════════════════════════════ */
+img,svg,video,canvas{max-width:100%}
+input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus */
+@media(min-width:769px){input,select,textarea,button{font-size:inherit}}
+
+/* ── TABLET / SMALL LAPTOP ── */
+@media(max-width:1100px){
+  main{padding:22px 20px 120px!important}
+  #dashboard.page.active{grid-template-columns:1fr;grid-template-areas:"hd" "map" "stats"}
+  #dashboard > .stats-grid{flex-direction:row!important;flex-wrap:wrap;height:auto}
+  #dashboard .stat-card{flex:1 1 220px;min-height:110px}
+  #dashboard .map-wrap{height:420px}
+  .sidebar-link{padding:9px 12px!important;font-size:12.8px}
+  .sidebar-link .sidebar-icon{font-size:14px}
+}
+@media(max-width:900px){
+  .sim-controls{grid-template-columns:1fr;gap:16px}
+  .sim-scene{height:205px}
+  .pdx-grid{grid-template-columns:1fr!important;direction:ltr!important}
+  #market-trends.page.active{grid-template-columns:1fr!important}
 }
 
-/* Touch & Smooth Scaling Defaults */
-html, body {
-  min-height: 100dvh;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+/* ── PHONE ── */
+@media(max-width:768px){
+  main{padding:14px 14px 120px!important;max-width:100%}
+  .page-header{padding-right:0!important}
+  .page-header h1{font-size:clamp(22px,6.5vw,30px)!important;flex-wrap:wrap}
+  .page-header p{font-size:13.5px}
+  .card-body{padding:15px!important}
+  .card-header{padding:13px 15px!important;flex-wrap:wrap;gap:8px}
+  .fasal3d-emblem{width:92px;height:92px;margin:4px auto 0}
+  /* modals become near-fullscreen sheets */
+  #farm-sim{padding:0;align-items:flex-end}
+  .sim-card{max-width:100%;max-height:94vh;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+  .sim-body{padding:17px}
+  /* The isometric field needs vertical room; at 142px the rotated grid was
+     clipped by the scene and hidden behind the crop badge. */
+  .sim-scene{height:215px;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+  .sim-plots{top:36%}                       /* lift the tiles above the badge */
+  .sim-sun{top:14px;right:auto;left:18px;width:38px;height:38px}  /* clear of the close button */
+  .sim-crop-badge{
+    left:10px;right:10px;bottom:10px;padding:8px 11px;gap:9px;
+    background:rgba(10,6,2,0.66);
+  }
+  .sim-crop-icon{width:36px;height:36px}
+  .sim-crop-meta h3{font-size:15px}
+  .sim-crop-meta span{font-size:10.5px}
+  .sim-match-chip{font-size:9.5px;padding:2px 7px;margin-top:4px}
+  .sim-hero{padding:16px;gap:12px}
+  .sim-roi{text-align:left}
+  .sim-breakdown{grid-template-columns:repeat(2,1fr)}
+  /* login */
+  .login-card{padding:30px 22px!important;max-width:100%;margin:0 4px}
+  .login-logo-icon{width:64px;height:64px}
+  .login-logo h1{font-size:25px}
+  .auth-links{font-size:12.5px}
+  /* guide card sits as a bottom sheet so it never covers the highlight */
+  #tut-card{
+    left:12px!important;right:12px!important;width:auto!important;max-width:none!important;
+    top:auto!important;bottom:14px!important;
+  }
+  .tut-actions{flex-wrap:wrap}
+  .tut-btn{flex:1;min-width:88px;justify-content:center;text-align:center}
+  .tut-step{width:100%;text-align:center;margin:6px 0 0!important}
+  /* tables scroll instead of breaking layout */
+  .admin-table-wrap,table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .market-charts-grid{grid-template-columns:1fr!important}
+  .chat-shell{min-height:auto}
+  #crop-lens .chat-messages{min-height:52vh}
 }
 
-/* Aspect Ratio Utility Classes */
-.aspect-16-9 { aspect-ratio: 16 / 9; object-fit: cover; width: 100%; }
-.aspect-4-3  { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
-.aspect-1-1  { aspect-ratio: 1 / 1; object-fit: cover; }
-.aspect-square { aspect-ratio: 1 / 1; }
-
-/* Responsive Container Cap for Large Screens (4K & Ultra-wide) */
-@media (min-width: 1440px) {
-  .main-content, .topbar, #login-page {
-    max-width: 1720px;
-    margin-left: auto;
-    margin-right: auto;
-  }
+/* ── SMALL PHONE ── */
+@media(max-width:420px){
+  main{padding:12px 11px 116px!important}
+  .sim-breakdown{grid-template-columns:1fr}
+  .sim-hero-num{font-size:26px}
+  .stat-card{padding:14px!important}
+  .login-card{padding:26px 18px!important}
+  .auth-btn{font-size:13.5px;padding:12px 13px}
+  .bnav-item span{font-size:9.5px}
 }
 
-/* Fluid Resizing Grids */
-.dashboard-grid, .grid-auto, .cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: clamp(12px, 2vw, 24px);
+/* ── LANDSCAPE PHONE ── */
+@media(max-height:520px) and (orientation:landscape){
+  .sim-scene{height:110px}
+  .sim-card{max-height:96vh}
+  #tut-card{bottom:8px!important}
+  .login-card{padding:20px 22px!important}
+  .login-logo{margin-bottom:16px!important}
 }
 
-/* Touch Target Optimization */
-button, a, input, select, .nav-item, .ctrl-btn {
-  min-height: 40px;
-  touch-action: manipulation;
+/* ── BOTTOM DOCK: theme-correct colours + room for all 7 pages ──
+   The dock inherited hard-coded white item text, which vanished against
+   the light parchment theme. Drive every colour from tokens instead. */
+.bottom-nav-items{gap:2px}
+.bnav-item{
+  color:var(--text-light);
+  padding:5px 2px 3px;gap:3px;
+  flex:1 1 0;min-width:0;
+}
+.bnav-item i{font-size:17px}
+.bnav-item span{
+  font-size:9.5px;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.bnav-item:hover{color:var(--text-mid)}
+.bnav-item.active{color:var(--lime-600)!important}
+[data-theme="dark"] .bnav-item{color:var(--text-light)}
+[data-theme="dark"] .bnav-item.active{color:var(--lime)!important}
+[data-theme="light"] .bottom-nav{
+  background:rgba(255,253,248,0.94)!important;
+  border:1px solid var(--border)!important;
+  box-shadow:0 -2px 30px rgba(74,52,31,0.14)!important;
+}
+[data-theme="light"] .bnav-item{color:var(--text-mid)}
+[data-theme="light"] .bnav-item.active{color:var(--green-600)!important}
+@media(max-width:400px){
+  .bnav-item i{font-size:15.5px}
+  .bnav-item span{font-size:8.5px}
+  .bottom-nav{left:8px;right:8px}
 }
 
-/* ── TABLET BREAKPOINT (max-width: 1024px) ── */
-@media (max-width: 1024px) {
-  :root {
-    --sidebar-w: 220px;
-  }
-  .display { font-size: clamp(24px, 3.5vw, 34px); }
-  .cards-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+/* ── TOUCH DEVICES: kill hover-only motion, enlarge targets ── */
+@media(hover:none){
+  .card:hover,.stat-card:hover{transform:none!important}
+  .tilt-3d{transform:none!important}
+  .sidebar-link,.bnav-item,.map-btn,.tut-btn,.auth-btn{min-height:44px}
 }
-
-/* ── MOBILE BREAKPOINT (max-width: 768px) ── */
-@media (max-width: 768px) {
-  body {
-    padding-bottom: max(68px, calc(60px + var(--sab)));
-    padding-left: var(--sal);
-    padding-right: var(--sar);
-  }
-  
-  /* Mobile Header & Sidebar adjustment */
-  #topbar {
-    padding: 12px 16px;
-    padding-top: max(12px, var(--sat));
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: -280px;
-    width: 280px;
-    height: 100dvh;
-    z-index: 1000;
-    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-    box-shadow: 4px 0 25px rgba(0,0,0,0.5);
-  }
-
-  .sidebar.mobile-open {
-    transform: translateX(280px);
-  }
-
-  .main-content {
-    margin-left: 0 !important;
-    padding: 14px !important;
-  }
-
-  /* Full-width responsive cards */
-  .card, .stat-card, .chart-card {
-    border-radius: var(--radius-md);
-    padding: 14px !important;
-    width: 100% !important;
-  }
-
-  /* Flexible Map Container */
-  #map, .leaflet-container {
-    height: clamp(250px, 45vh, 400px) !important;
-    min-height: 250px;
-    border-radius: var(--radius-sm);
-  }
-
-  /* Bottom Navigation Bar Safe Inset */
-  #bottom-nav, .bottom-nav {
-    padding-bottom: max(8px, var(--sab));
-  }
-
-  /* Modal responsiveness */
-  .modal-content, .dialog-box {
-    width: 94% !important;
-    max-width: 500px !important;
-    margin: 12px auto !important;
-    max-height: 88dvh !important;
-    overflow-y: auto !important;
-  }
-}
-
-/* ── SMALL MOBILE BREAKPOINT (max-width: 480px) ── */
-@media (max-width: 480px) {
-  h1 { font-size: 20px !important; }
-  h2 { font-size: 17px !important; }
-  h3 { font-size: 15px !important; }
-  
-  .btn, .login-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 12px 16px;
-  }
-
-  /* Horizontal scrolling for tab bars on small screens */
-  .tab-bar, .tabs-header, .nav-tabs {
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px;
-  }
-  .tab-bar::-webkit-scrollbar { display: none; }
-
-  .price-cards, .weather-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* ── ASPECT RATIO & ORIENTATION OPTIMIZATIONS ── */
-@media (max-aspect-ratio: 1/1) {
-  /* Portrait phones & tablets: stack split view containers */
-  .split-view, .flex-row-mobile-column {
-    flex-direction: column !important;
-  }
-}
-
-@media (min-aspect-ratio: 2/1) {
-  /* Ultra-wide landscape views: compact vertical paddings */
-  .main-content {
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
-  }
-}
-
-
-
-/* ════════════════════════════════════════════════════════════════════
-   PIXEL-PERFECT DESKTOP & MOBILE RESPONSIVE SYSTEM
-   ════════════════════════════════════════════════════════════════════ */
-
-/* Desktop & Laptop View (min-width: 769px) */
-@media (min-width: 769px) {
-  #app {
-    display: flex !important;
-    width: 100% !important;
-    min-height: 100vh !important;
-  }
-  
-  .sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: var(--sidebar-w, 264px) !important;
-    height: 100vh !important;
-    background: var(--green-900, #14290f) !important;
-    border-radius: 0 !important;
-    z-index: 200 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    transform: none !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-  }
-  
-  .sidebar.collapsed {
-    width: var(--sidebar-w-sm, 76px) !important;
-  }
-
-  .main-content {
-    margin-left: var(--sidebar-w, 264px) !important;
-    width: calc(100% - var(--sidebar-w, 264px)) !important;
-    min-height: 100vh !important;
-    box-sizing: border-box !important;
-    padding: 0 !important;
-  }
-
-  .main-content.expanded {
-    margin-left: var(--sidebar-w-sm, 76px) !important;
-    width: calc(100% - var(--sidebar-w-sm, 76px)) !important;
-  }
-
-  .topbar {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 100 !important;
-    width: 100% !important;
-    height: 68px !important;
-    padding: 0 28px !important;
-    box-sizing: border-box !important;
-    background: var(--card-bg) !important;
-    border-bottom: 1px solid var(--border) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-  }
-
-  .bottom-nav, .mobile-menu-btn, .sidebar-overlay {
-    display: none !important;
-  }
-}
-
-/* Mobile & Tablet View (max-width: 768px) */
-@media (max-width: 768px) {
-  .sidebar {
-    display: none !important;
-  }
-
-  .main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding-bottom: max(72px, calc(64px + env(safe-area-inset-bottom))) !important;
-  }
-
-  .topbar {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 100 !important;
-    width: 100% !important;
-    height: 60px !important;
-    padding: 0 16px !important;
-    box-sizing: border-box !important;
-  }
-
-  .bottom-nav {
-    display: block !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 999 !important;
-    background: var(--card-bg, #281d12) !important;
-    border-top: 1px solid var(--border, #46341f) !important;
-    padding: 6px 4px max(8px, env(safe-area-inset-bottom)) 4px !important;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.25) !important;
-  }
-
-  .bottom-nav-items {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-around !important;
-  }
-
-  .bnav-item {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 2px !important;
-    padding: 4px 2px !important;
-    border: none !important;
-    background: transparent !important;
-    color: var(--text-mid, #cbb99d) !important;
-    font-size: 10px !important;
-    font-weight: 500 !important;
-  }
-
-  .bnav-item i {
-    font-size: 16px !important;
-  }
-
-  .bnav-item.active {
-    color: var(--green-500, #5aa83c) !important;
-    font-weight: 700 !important;
-  }
-}
-
 </style>
 </head>
-
 <body>
 
 <!-- ══ LOGIN PAGE ══ -->
+<!-- ══ FARM PROFIT SIMULATOR ══ -->
+<div id="farm-sim" role="dialog" aria-modal="true" aria-labelledby="sim-crop-name">
+  <div class="sim-card">
+    <button class="sim-close" onclick="closeFarmSim()" aria-label="Close"><i class="fas fa-xmark"></i></button>
+
+    <div class="sim-scene">
+      <div class="sim-sun"></div>
+      <div class="sim-plots" id="sim-plots"></div>
+      <div class="sim-crop-badge">
+        <div class="sim-crop-icon" id="sim-crop-icon"></div>
+        <div class="sim-crop-meta">
+          <h3 id="sim-crop-name">Crop</h3>
+          <span id="sim-crop-type">—</span>
+          <div><span class="sim-match-chip" id="sim-crop-match"><i class="fas fa-bullseye"></i> —</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-body">
+      <div class="sim-controls">
+        <div class="sim-ctrl">
+          <label>
+            <span data-i18n="sim_farm_size">Farm size</span>
+            <span class="val" id="sim-size-val">2.0 acre</span>
+          </label>
+          <input type="range" class="sim-range" id="sim-size" min="0.5" max="25" step="0.5" value="2" aria-label="Farm size in acres">
+          <span class="sim-hint" id="sim-size-hint">≈ 0.81 hectare</span>
+        </div>
+        <div class="sim-ctrl">
+          <label>
+            <span data-i18n="sim_investment">Investment you can put in</span>
+            <span class="val" id="sim-invest-val">₹44,000</span>
+          </label>
+          <input type="range" class="sim-range" id="sim-invest" min="0" max="100" step="1" value="50" aria-label="Investment level">
+          <span class="sim-hint" id="sim-invest-hint">Recommended for this size</span>
+        </div>
+      </div>
+
+      <div class="sim-hero" id="sim-hero">
+        <div>
+          <div class="sim-hero-label" data-i18n="sim_est_profit">Estimated profit</div>
+          <div class="sim-hero-num" id="sim-profit">₹0</div>
+          <div class="sim-hero-sub" id="sim-profit-sub">over one season</div>
+        </div>
+        <div class="sim-roi">
+          <div class="sim-roi-num" id="sim-roi">0%</div>
+          <div class="sim-roi-label" data-i18n="sim_roi">Return</div>
+        </div>
+      </div>
+
+      <div class="sim-results">
+        <div class="sim-bar-row" id="row-yield">
+          <div class="sim-bar-icon yield"><i class="fas fa-wheat-awn"></i></div>
+          <div class="sim-bar-main">
+            <div class="sim-bar-top">
+              <span class="sim-bar-label" data-i18n="sim_yield">Expected yield</span>
+              <span class="sim-bar-value" id="sim-yield">0 qtl</span>
+            </div>
+            <div class="sim-bar-track"><div class="sim-bar-fill yield" id="fill-yield"></div></div>
+          </div>
+        </div>
+        <div class="sim-bar-row" id="row-rev">
+          <div class="sim-bar-icon rev"><i class="fas fa-indian-rupee-sign"></i></div>
+          <div class="sim-bar-main">
+            <div class="sim-bar-top">
+              <span class="sim-bar-label" data-i18n="sim_revenue">Gross revenue</span>
+              <span class="sim-bar-value" id="sim-rev">₹0</span>
+            </div>
+            <div class="sim-bar-track"><div class="sim-bar-fill rev" id="fill-rev"></div></div>
+          </div>
+        </div>
+        <div class="sim-bar-row" id="row-cost">
+          <div class="sim-bar-icon cost"><i class="fas fa-sack-dollar"></i></div>
+          <div class="sim-bar-main">
+            <div class="sim-bar-top">
+              <span class="sim-bar-label" data-i18n="sim_cost">Total input cost</span>
+              <span class="sim-bar-value" id="sim-cost">₹0</span>
+            </div>
+            <div class="sim-bar-track"><div class="sim-bar-fill cost" id="fill-cost"></div></div>
+          </div>
+        </div>
+        <div class="sim-bar-row" id="row-profit">
+          <div class="sim-bar-icon profit"><i class="fas fa-arrow-trend-up"></i></div>
+          <div class="sim-bar-main">
+            <div class="sim-bar-top">
+              <span class="sim-bar-label" data-i18n="sim_net">Net in hand</span>
+              <span class="sim-bar-value" id="sim-net">₹0</span>
+            </div>
+            <div class="sim-bar-track"><div class="sim-bar-fill profit" id="fill-profit"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-verdict">
+        <div class="sim-verdict-icon" id="sim-verdict-icon">🌱</div>
+        <div class="sim-verdict-text" id="sim-verdict-text">Adjust the sliders to see your estimate.</div>
+      </div>
+
+      <div class="sim-breakdown">
+        <div class="sim-chip"><div class="sim-chip-label" data-i18n="sim_per_acre">Yield / acre</div><div class="sim-chip-val" id="chip-yield">—</div></div>
+        <div class="sim-chip"><div class="sim-chip-label" data-i18n="sim_price">Price / qtl</div><div class="sim-chip-val" id="chip-price">—</div></div>
+        <div class="sim-chip"><div class="sim-chip-label" data-i18n="sim_duration">Season length</div><div class="sim-chip-val" id="chip-days">—</div></div>
+        <div class="sim-chip"><div class="sim-chip-label" data-i18n="sim_water">Water need</div><div class="sim-chip-val" id="chip-water">—</div></div>
+      </div>
+
+      <div class="sim-disclaimer">
+        <i class="fas fa-circle-info"></i><span id="sim-disclaimer-text">Estimates use typical Indian per-acre yields and input costs, adjusted for your soil and climate match. Actual results vary with variety, weather, labour rates and mandi prices on the day you sell.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="login-page">
   <div class="login-bg"></div>
   <div class="botanicals">
@@ -3022,6 +3169,73 @@ button, a, input, select, .nav-item, .ctrl-btn {
       <h1 data-i18n="app_title">FasalAI</h1>
       <p data-i18n="app_subtitle">Agricultural Intelligence Platform</p>
     </div>
+
+    <!-- ══ AUTH METHOD CHOOSER ══ -->
+    <div class="auth-pane active" id="pane-choose">
+      <div class="auth-methods">
+        <button type="button" class="auth-btn google" id="btn-google" onclick="signInWithGoogle()">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          <span data-i18n="continue_google">Continue with Google</span>
+        </button>
+        <button type="button" class="auth-btn" onclick="authPane('pane-email-signin')">
+          <i class="fas fa-envelope"></i><span data-i18n="continue_email">Continue with Email</span>
+        </button>
+      </div>
+      <div class="auth-divider"><span data-i18n="auth_or">or</span></div>
+      <button type="button" class="auth-btn" onclick="authPane('pane-phone')">
+        <i class="fas fa-mobile-screen"></i><span data-i18n="continue_phone">Use phone number</span>
+      </button>
+    </div>
+
+    <!-- ══ EMAIL SIGN IN ══ -->
+    <div class="auth-pane" id="pane-email-signin">
+      <button class="auth-back" onclick="authPane('pane-choose')"><i class="fas fa-arrow-left"></i> <span data-i18n="auth_back">Back</span></button>
+      <div class="form-group">
+        <label data-i18n="email_label">Email address</label>
+        <input type="email" id="email-login-address" class="form-control" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label data-i18n="password_label">Password</label>
+        <div class="password-container">
+          <input type="password" id="email-login-password" class="form-control" placeholder="Enter your password" autocomplete="current-password">
+          <button type="button" class="toggle-password" onclick="togglePW('email-login-password',this)"><i class="fas fa-eye"></i></button>
+        </div>
+      </div>
+      <button type="button" class="auth-btn primary" id="btn-email-signin" onclick="emailSignIn()">
+        <i class="fas fa-right-to-bracket"></i><span data-i18n="sign_in">Sign In</span>
+      </button>
+      <div class="auth-links">
+        <a href="#" onclick="emailResetPassword();return false" data-i18n="forgot_password">Forgot password?</a>
+        <a href="#" class="accent" onclick="authPane('pane-email-signup');return false" data-i18n="create_account">Create Account</a>
+      </div>
+    </div>
+
+    <!-- ══ EMAIL SIGN UP ══ -->
+    <div class="auth-pane" id="pane-email-signup">
+      <button class="auth-back" onclick="authPane('pane-email-signin')"><i class="fas fa-arrow-left"></i> <span data-i18n="auth_back">Back</span></button>
+      <div class="form-group">
+        <label data-i18n="full_name_label">Full Name</label>
+        <input type="text" id="email-signup-name" class="form-control" placeholder="Enter your full name" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label data-i18n="email_label">Email address</label>
+        <input type="email" id="email-signup-address" class="form-control" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label data-i18n="password_label">Password</label>
+        <div class="password-container">
+          <input type="password" id="email-signup-password" class="form-control" placeholder="At least 6 characters" autocomplete="new-password">
+          <button type="button" class="toggle-password" onclick="togglePW('email-signup-password',this)"><i class="fas fa-eye"></i></button>
+        </div>
+      </div>
+      <button type="button" class="auth-btn primary" id="btn-email-signup" onclick="emailSignUp()">
+        <i class="fas fa-user-plus"></i><span data-i18n="create_account">Create Account</span>
+      </button>
+    </div>
+
+    <!-- ══ PHONE (local accounts) ══ -->
+    <div class="auth-pane" id="pane-phone">
+      <button class="auth-back" onclick="authPane('pane-choose')"><i class="fas fa-arrow-left"></i> <span data-i18n="auth_back">Back</span></button>
 
     <!-- Login Form -->
     <form id="login-form">
@@ -3120,6 +3334,7 @@ button, a, input, select, .nav-item, .ctrl-btn {
     <div class="form-footer">
       <p id="form-toggle-text">Don't have an account? <a href="#" id="form-toggle-link">Create Account</a></p>
     </div>
+    </div><!-- /pane-phone -->
   </div>
 </div>
 
@@ -3204,6 +3419,8 @@ button, a, input, select, .nav-item, .ctrl-btn {
 <div id="tut-overlay">
   <div id="tut-hole"></div>
   <div id="tut-card">
+    <div class="tut-progress"><div class="tut-progress-fill" id="tut-progress-fill"></div></div>
+    <span class="tut-chip" id="tut-chip" style="display:none"></span>
     <h4 id="tut-title">—</h4>
     <p id="tut-body">—</p>
     <div class="tut-actions">
@@ -3314,7 +3531,7 @@ button, a, input, select, .nav-item, .ctrl-btn {
     <!-- TOPBAR -->
     <div class="topbar">
       <div class="topbar-title" id="topbar-title" data-no-transl>
-        
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
         <span id="topbar-page-title">Dashboard</span>
         <span class="badge-pill sky" style="font-size:10px"><i class="fas fa-satellite" style="font-size:9px"></i> LIVE DATA</span>
       </div>
@@ -3890,6 +4107,7 @@ const translations = {
     err_wrong_password:"Incorrect password. Please try again.",
     err_invalid_login:"Incorrect phone number or password. Please try again.",
     pest_patrol:"Lens",plant_diagnosis:"Clinic",
+    continue_google:"Continue with Google",continue_email:"Continue with Email",continue_phone:"Use phone number",auth_or:"or",auth_back:"Back",email_label:"Email address",forgot_password:"Forgot password?",
     tut_next:"Next",tut_back:"Back",tut_skip:"Skip",tut_done:"Done",
     tut_nav:"Your toolkit",tut_nav_d:"Everything lives up here. Tap any tab to jump between your farm's tools.",
     tut_pulse:"Pulse",tut_pulse_d:"Your farm at a glance — live soil, water and air readings on an interactive map.",
@@ -3898,6 +4116,21 @@ const translations = {
     tut_bazaar:"Bazaar",tut_bazaar_d:"Live mandi rates and government MSP so you know when to sell.",
     tut_lang:"Your language",tut_lang_d:"Switch the whole app into your language — every screen translates instantly.",
     tut_theme:"Day or night",tut_theme_d:"Toggle between sunlit and soil themes, whichever is easier on your eyes.",
+    g_welcome:"Welcome to FasalAI",g_welcome_d:"Let me walk you through the app. I'll open each page as we go — use Next, or the arrow keys.",
+    g_pulse:"Pulse — your farm at a glance",g_pulse_d:"These three cards read your soil, water and air health live. Tap any one to jump into the detailed breakdown.",
+    g_map:"Your farm on the map",g_map_d:"Search a village or tap My Location, then Fetch Data. Everything else in the app is built around this spot.",
+    g_vitals:"Vitals — the deep numbers",g_vitals_d:"Switch between Soil, Water, Air and Satellite to see pH, moisture, NDVI and more, drawn from live sources.",
+    g_picks:"Picks — what to grow",g_picks_d:"FasalAI ranks crops by how well they match your soil, water and climate right now, best first.",
+    g_sim:"Profit Simulator",g_sim_d:"Tap any crop card to open it. Drag the farm size and investment sliders and watch your estimated yield, cost and profit update live.",
+    g_clinic:"Clinic — scan a sick leaf",g_clinic_d:"Photograph or upload a leaf. The AI model runs on your own device, so your photos never leave your phone.",
+    g_advice:"Your treatment plan",g_advice_d:"You get the disease name with a confidence score, plus organic, chemical and cultural treatment, nutrients, prevention and pruning.",
+    g_sage:"Sage — ask anything",g_sage_d:"Type or speak a question about your crops. Sage already knows your soil and weather, and answers in your language.",
+    g_bazaar:"Bazaar — know the rate",g_bazaar_d:"Live wholesale mandi prices and the government MSP, so you can decide when and where to sell.",
+    g_kisan:"Kisan — your profile",g_kisan_d:"Your account details and saved farm live here. Your data stays on your device.",
+    g_lang:"Any language",g_lang_d:"Switch the whole app into your language from here — every screen translates instantly.",
+    g_theme:"Day or night",g_theme_d:"Flip between the sunlit and soil themes, whichever is easier to read out in the field.",
+    g_done:"You're all set",g_done_d:"That's the whole app. Tap this cap button any time to run the guide again. Happy farming!",
+    g_signin:"Three ways in",g_signin_d:"Sign in with Google, with an email and password, or with just a phone number — whichever suits you.",
     tut_signin:"Sign in",tut_signin_d:"Enter your phone number and password to open your farm dashboard.",
     tut_create:"New here?",tut_create_d:"Create an account in seconds — you only need a phone number.",
     tut_tour:"Take the tour",tut_tour_d:"Step through these cards to see what FasalAI can do before you begin.",
@@ -3943,6 +4176,21 @@ const translations = {
     tut_bazaar:"बाज़ार",tut_bazaar_d:"मंडी के ताज़ा भाव और सरकारी MSP — ताकि आप सही समय पर बेचें।",
     tut_lang:"आपकी भाषा",tut_lang_d:"पूरे ऐप को अपनी भाषा में बदलें — हर स्क्रीन तुरंत अनुवादित होगी।",
     tut_theme:"दिन या रात",tut_theme_d:"धूप और मिट्टी थीम के बीच बदलें, जो आपकी आँखों के लिए आसान हो।",
+    g_welcome:"FasalAI में आपका स्वागत है",g_welcome_d:"आइए ऐप घुमा कर दिखाते हैं। हर पेज अपने आप खुलेगा — आगे दबाएँ।",
+    g_pulse:"पल्स — खेत एक नज़र में",g_pulse_d:"ये तीन कार्ड आपकी मिट्टी, पानी और हवा की सेहत लाइव दिखाते हैं। विस्तार से देखने के लिए किसी पर भी दबाएँ।",
+    g_map:"नक्शे पर आपका खेत",g_map_d:"गाँव खोजें या मेरा स्थान दबाएँ, फिर डेटा लाएँ। ऐप की बाकी सब जानकारी इसी जगह पर बनती है।",
+    g_vitals:"वाइटल्स — पूरी जानकारी",g_vitals_d:"मिट्टी, पानी, हवा और सैटेलाइट में बदलें और pH, नमी, NDVI जैसे आँकड़े देखें।",
+    g_picks:"पिक्स — क्या बोएँ",g_picks_d:"FasalAI आपकी मिट्टी, पानी और मौसम के हिसाब से सबसे सही फसलें क्रम में बताता है।",
+    g_sim:"मुनाफ़ा सिम्युलेटर",g_sim_d:"किसी भी फसल पर दबाएँ। खेत का आकार और निवेश खिसकाएँ और अनुमानित उपज, लागत तथा मुनाफ़ा तुरंत देखें।",
+    g_clinic:"क्लिनिक — बीमार पत्ता जाँचें",g_clinic_d:"पत्ते की फोटो लें या डालें। AI आपके अपने फ़ोन पर चलता है, फोटो कहीं नहीं जाती।",
+    g_advice:"आपका इलाज",g_advice_d:"बीमारी का नाम, भरोसे का स्कोर, और जैविक, रासायनिक व खेती के उपाय, पोषक तत्व, रोकथाम और छँटाई मिलती है।",
+    g_sage:"सेज — कुछ भी पूछें",g_sage_d:"फसल के बारे में लिखकर या बोलकर पूछें। सेज आपकी मिट्टी और मौसम जानता है और आपकी भाषा में जवाब देता है।",
+    g_bazaar:"बाज़ार — भाव जानें",g_bazaar_d:"मंडी के ताज़ा थोक भाव और सरकारी MSP, ताकि आप सही समय पर बेच सकें।",
+    g_kisan:"किसान — आपकी प्रोफ़ाइल",g_kisan_d:"आपके खाते और सहेजे गए खेत की जानकारी यहाँ है। डेटा आपके फ़ोन पर ही रहता है।",
+    g_lang:"कोई भी भाषा",g_lang_d:"यहाँ से पूरे ऐप की भाषा बदलें — हर स्क्रीन तुरंत बदल जाएगी।",
+    g_theme:"दिन या रात",g_theme_d:"धूप और मिट्टी थीम में बदलें, जो खेत में पढ़ने में आसान हो।",
+    g_done:"सब तैयार है",g_done_d:"यही पूरा ऐप है। दोबारा देखने के लिए कभी भी यह बटन दबाएँ। खेती शुभ हो!",
+    g_signin:"अंदर आने के तीन तरीके",g_signin_d:"Google से, ईमेल-पासवर्ड से, या सिर्फ़ फ़ोन नंबर से — जो आपको ठीक लगे।",
     tut_signin:"साइन इन करें",tut_signin_d:"अपना फ़ोन नंबर और पासवर्ड डालकर अपना डैशबोर्ड खोलें।",
     tut_create:"नए हैं?",tut_create_d:"कुछ ही सेकंड में खाता बनाएँ — बस फ़ोन नंबर चाहिए।",
     tut_tour:"टूर लें",tut_tour_d:"शुरू करने से पहले इन कार्ड्स से जानें कि FasalAI क्या कर सकता है।",
@@ -4017,6 +4265,21 @@ const translations = {
     tut_bazaar:"ਬਾਜ਼ਾਰ",tut_bazaar_d:"ਮੰਡੀ ਦੇ ਤਾਜ਼ਾ ਭਾਅ ਤੇ ਸਰਕਾਰੀ MSP — ਤਾਂ ਜੋ ਤੁਸੀਂ ਸਹੀ ਸਮੇਂ ਵੇਚੋ।",
     tut_lang:"ਤੁਹਾਡੀ ਭਾਸ਼ਾ",tut_lang_d:"ਪੂਰੀ ਐਪ ਨੂੰ ਆਪਣੀ ਭਾਸ਼ਾ ਵਿੱਚ ਬਦਲੋ — ਹਰ ਸਕ੍ਰੀਨ ਤੁਰੰਤ ਅਨੁਵਾਦ ਹੋਵੇਗੀ।",
     tut_theme:"ਦਿਨ ਜਾਂ ਰਾਤ",tut_theme_d:"ਧੁੱਪ ਤੇ ਮਿੱਟੀ ਥੀਮ ਵਿੱਚ ਬਦਲੋ, ਜੋ ਤੁਹਾਡੀਆਂ ਅੱਖਾਂ ਲਈ ਸੌਖਾ ਹੋਵੇ।",
+    g_welcome:"FasalAI ਵਿੱਚ ਜੀ ਆਇਆਂ ਨੂੰ",g_welcome_d:"ਆਓ ਐਪ ਘੁੰਮਾ ਕੇ ਵਿਖਾਈਏ। ਹਰ ਪੰਨਾ ਆਪੇ ਖੁੱਲ੍ਹੇਗਾ — ਅੱਗੇ ਦਬਾਓ।",
+    g_pulse:"ਪਲਸ — ਖੇਤ ਇੱਕ ਨਜ਼ਰ ਵਿੱਚ",g_pulse_d:"ਇਹ ਤਿੰਨ ਕਾਰਡ ਤੁਹਾਡੀ ਮਿੱਟੀ, ਪਾਣੀ ਤੇ ਹਵਾ ਦੀ ਸਿਹਤ ਸਿੱਧੀ ਵਿਖਾਉਂਦੇ ਹਨ।",
+    g_map:"ਨਕਸ਼ੇ ਉੱਤੇ ਤੁਹਾਡਾ ਖੇਤ",g_map_d:"ਪਿੰਡ ਲੱਭੋ ਜਾਂ ਮੇਰਾ ਟਿਕਾਣਾ ਦਬਾਓ, ਫਿਰ ਡਾਟਾ ਲਿਆਓ। ਬਾਕੀ ਸਭ ਇਸੇ ਥਾਂ ਉੱਤੇ ਬਣਦਾ ਹੈ।",
+    g_vitals:"ਵਾਈਟਲਸ — ਪੂਰੀ ਜਾਣਕਾਰੀ",g_vitals_d:"ਮਿੱਟੀ, ਪਾਣੀ, ਹਵਾ ਤੇ ਸੈਟੇਲਾਈਟ ਵਿੱਚ ਬਦਲੋ ਅਤੇ pH, ਨਮੀ, NDVI ਵੇਖੋ।",
+    g_picks:"ਪਿਕਸ — ਕੀ ਬੀਜੀਏ",g_picks_d:"FasalAI ਤੁਹਾਡੀ ਮਿੱਟੀ, ਪਾਣੀ ਤੇ ਮੌਸਮ ਮੁਤਾਬਕ ਸਭ ਤੋਂ ਢੁਕਵੀਆਂ ਫਸਲਾਂ ਦੱਸਦਾ ਹੈ।",
+    g_sim:"ਮੁਨਾਫ਼ਾ ਸਿਮੂਲੇਟਰ",g_sim_d:"ਕਿਸੇ ਵੀ ਫਸਲ ਉੱਤੇ ਦਬਾਓ। ਖੇਤ ਦਾ ਆਕਾਰ ਤੇ ਨਿਵੇਸ਼ ਖਿਸਕਾਓ ਅਤੇ ਝਾੜ, ਲਾਗਤ ਤੇ ਮੁਨਾਫ਼ਾ ਵੇਖੋ।",
+    g_clinic:"ਕਲੀਨਿਕ — ਬਿਮਾਰ ਪੱਤਾ ਜਾਂਚੋ",g_clinic_d:"ਪੱਤੇ ਦੀ ਫੋਟੋ ਲਵੋ ਜਾਂ ਪਾਓ। AI ਤੁਹਾਡੇ ਆਪਣੇ ਫ਼ੋਨ ਉੱਤੇ ਚੱਲਦਾ ਹੈ, ਫੋਟੋ ਕਿਤੇ ਨਹੀਂ ਜਾਂਦੀ।",
+    g_advice:"ਤੁਹਾਡਾ ਇਲਾਜ",g_advice_d:"ਬਿਮਾਰੀ ਦਾ ਨਾਂ, ਭਰੋਸੇ ਦਾ ਸਕੋਰ, ਤੇ ਜੈਵਿਕ, ਰਸਾਇਣਕ ਤੇ ਖੇਤੀ ਦੇ ਉਪਾਅ ਮਿਲਦੇ ਹਨ।",
+    g_sage:"ਸੇਜ — ਕੁਝ ਵੀ ਪੁੱਛੋ",g_sage_d:"ਫਸਲ ਬਾਰੇ ਲਿਖ ਕੇ ਜਾਂ ਬੋਲ ਕੇ ਪੁੱਛੋ। ਸੇਜ ਤੁਹਾਡੀ ਭਾਸ਼ਾ ਵਿੱਚ ਜਵਾਬ ਦਿੰਦਾ ਹੈ।",
+    g_bazaar:"ਬਾਜ਼ਾਰ — ਭਾਅ ਜਾਣੋ",g_bazaar_d:"ਮੰਡੀ ਦੇ ਤਾਜ਼ਾ ਭਾਅ ਤੇ ਸਰਕਾਰੀ MSP, ਤਾਂ ਜੋ ਤੁਸੀਂ ਸਹੀ ਸਮੇਂ ਵੇਚੋ।",
+    g_kisan:"ਕਿਸਾਨ — ਤੁਹਾਡੀ ਪ੍ਰੋਫ਼ਾਈਲ",g_kisan_d:"ਤੁਹਾਡੇ ਖਾਤੇ ਤੇ ਸਾਂਭੇ ਖੇਤ ਦੀ ਜਾਣਕਾਰੀ ਇੱਥੇ ਹੈ।",
+    g_lang:"ਕੋਈ ਵੀ ਭਾਸ਼ਾ",g_lang_d:"ਇੱਥੋਂ ਪੂਰੀ ਐਪ ਦੀ ਭਾਸ਼ਾ ਬਦਲੋ — ਹਰ ਸਕ੍ਰੀਨ ਤੁਰੰਤ ਬਦਲ ਜਾਵੇਗੀ।",
+    g_theme:"ਦਿਨ ਜਾਂ ਰਾਤ",g_theme_d:"ਧੁੱਪ ਤੇ ਮਿੱਟੀ ਥੀਮ ਵਿੱਚ ਬਦਲੋ, ਜੋ ਪੜ੍ਹਨ ਵਿੱਚ ਸੌਖਾ ਹੋਵੇ।",
+    g_done:"ਸਭ ਤਿਆਰ ਹੈ",g_done_d:"ਇਹੀ ਪੂਰੀ ਐਪ ਹੈ। ਦੁਬਾਰਾ ਵੇਖਣ ਲਈ ਕਦੇ ਵੀ ਇਹ ਬਟਨ ਦਬਾਓ।",
+    g_signin:"ਅੰਦਰ ਆਉਣ ਦੇ ਤਿੰਨ ਤਰੀਕੇ",g_signin_d:"Google ਨਾਲ, ਈਮੇਲ-ਪਾਸਵਰਡ ਨਾਲ, ਜਾਂ ਸਿਰਫ਼ ਫ਼ੋਨ ਨੰਬਰ ਨਾਲ।",
     tut_signin:"ਸਾਈਨ ਇਨ ਕਰੋ",tut_signin_d:"ਆਪਣਾ ਫ਼ੋਨ ਨੰਬਰ ਤੇ ਪਾਸਵਰਡ ਪਾ ਕੇ ਆਪਣਾ ਡੈਸ਼ਬੋਰਡ ਖੋਲ੍ਹੋ।",
     tut_create:"ਨਵੇਂ ਹੋ?",tut_create_d:"ਕੁਝ ਸਕਿੰਟਾਂ ਵਿੱਚ ਖਾਤਾ ਬਣਾਓ — ਸਿਰਫ਼ ਫ਼ੋਨ ਨੰਬਰ ਚਾਹੀਦਾ ਹੈ।",
     tut_tour:"ਟੂਰ ਲਵੋ",tut_tour_d:"ਸ਼ੁਰੂ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਇਹਨਾਂ ਕਾਰਡਾਂ ਤੋਂ ਜਾਣੋ ਕਿ FasalAI ਕੀ ਕਰ ਸਕਦਾ ਹੈ।",
@@ -5037,12 +5300,12 @@ let nasaPowerData={};
    Replace ROBOFLOW_API_KEY with your free key from roboflow.com
    Fallback: smart climate-based detection from PEST_DB
    ───────────────────────────────────── */
-const ROBOFLOW_API_KEY = 'YOUR_ROBOFLOW_API_KEY_HERE';
+const ROBOFLOW_API_KEY = 'YOUR_ROBOFLOW_KEY_HERE';
 const ROBOFLOW_MODEL_URL = 'https://serverless.roboflow.com/aarav-narula/workflows/detect-and-classify-2';
 const ROBOFLOW_DIRECT_URL = 'https://serverless.roboflow.com/soilscope/4';
 // Secondary free model: Hugging Face plant-disease CNN (public, no auth needed)
 const HF_PLANT_MODEL = 'https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification';
-const HF_PLANT_KEY = 'YOUR_HF_TOKEN_HERE'; // <── OPTIONAL: free at huggingface.co (improves rate limits)
+const HF_PLANT_KEY = ''; // Managed securely on server via /api/pdx or optional client key
 
 const locGen=new CityBasedAgriculturalData();
 const marketAPI=new MarketDataAPI();
@@ -5783,96 +6046,273 @@ function initTiltWidgets(root){
 /* ══════════════════════════════════════════════════════════════════
    TUTORIAL MODE — coach marks, fully translatable
 ══════════════════════════════════════════════════════════════════ */
-const TUT_STEPS = [
-  {sel:'.sidebar-nav', key:'tut_nav'},
-  {sel:'.sidebar-link[data-page="dashboard"]', key:'tut_pulse'},
-  {sel:'.sidebar-link[data-page="plant-diagnosis"]', key:'tut_clinic'},
-  {sel:'.sidebar-link[data-page="crop-lens"]', key:'tut_sage'},
-  {sel:'.sidebar-link[data-page="market-trends"]', key:'tut_bazaar'},
-  {sel:'#sidebar-lang-btn', key:'tut_lang'},
-  {sel:'#theme-btn', key:'tut_theme'}
+/* ═════════════════════════════════════════════════════════════════
+   SITE GUIDE — a walkthrough that actually drives the app:
+   it navigates to each page, waits for the transition, spotlights
+   the feature and narrates it. Works on phone, tablet and desktop.
+   ═════════════════════════════════════════════════════════════════ */
+
+/* Each step may name a page. The guide navigates there first, waits for
+   the page transition, then spotlights `sel` (falling back to `selMobile`
+   or the page itself when the desktop target is hidden on small screens). */
+const GUIDE_STEPS = [
+  { page:null,                key:'g_welcome',  sel:'.login-card, .sidebar-top', center:true },
+  { page:'dashboard',         key:'g_pulse',    sel:'#dashboard .stats-grid',      selMobile:'#dashboard .stats-grid' },
+  { page:'dashboard',         key:'g_map',      sel:'#dashboard .map-section' },
+  { page:'analysis',          key:'g_vitals',   sel:'#analysis .tab-nav' },
+  { page:'recommendations',   key:'g_picks',    sel:'#recommendations .crop-rankings' },
+  { page:'recommendations',   key:'g_sim',      sel:'#recommendations .podium-card, #recommendations .crop-rankings' },
+  { page:'plant-diagnosis',   key:'g_clinic',   sel:'#pdx-drop' },
+  { page:'plant-diagnosis',   key:'g_advice',   sel:'#pdx-advice-card' },
+  { page:'crop-lens',         key:'g_sage',     sel:'#crop-lens .chat-input-row, #crop-lens .chat-shell' },
+  { page:'market-trends',     key:'g_bazaar',   sel:'#market-trends #price-cards' },
+  { page:'account',           key:'g_kisan',    sel:'#account .card' },
+  { page:null,                key:'g_lang',     sel:'#sidebar-lang-btn', selMobile:'.bottom-nav' },
+  { page:null,                key:'g_theme',    sel:'#theme-btn' },
+  { page:null,                key:'g_done',     sel:'#tut-fab', center:false }
 ];
-/* Context-specific tours: the app tour targets nav that doesn't exist pre-login */
+
+/* Pre-login / onboarding tours stay short and local */
 const TUT_STEPS_LOGIN = [
-  {sel:'#login-lang-wrap', key:'tut_lang'},
-  {sel:'#login-theme-btn', key:'tut_theme'},
-  {sel:'.login-card .form-group', key:'tut_signin'},
-  {sel:'.form-footer', key:'tut_create'}
+  { key:'tut_lang',   sel:'#login-lang-wrap, .login-top-controls' },
+  { key:'tut_theme',  sel:'#login-theme-btn' },
+  { key:'g_signin',   sel:'.auth-methods, .login-card' },
+  { key:'tut_create', sel:'.auth-methods .auth-btn:last-child, .login-card' }
 ];
 const TUT_STEPS_OB = [
-  {sel:'#ob-lang-wrap', key:'tut_lang'},
-  {sel:'#onboarding-theme-btn', key:'tut_theme'},
-  {sel:'.ob-next-btn', key:'tut_tour'}
+  { key:'tut_lang',  sel:'#ob-lang-wrap, .onboarding-top-controls' },
+  { key:'tut_theme', sel:'#onboarding-theme-btn' },
+  { key:'tut_tour',  sel:'.ob-next-btn' }
 ];
-let _tutSteps = TUT_STEPS;
+
+let _tutSteps = GUIDE_STEPS;
 let _tutIdx = 0;
+let _guideBusy = false;
 
 function tutText(key, field){
   const k = key + (field==='body' ? '_d' : '');
   const lang = (typeof currentLanguage!=='undefined' && currentLanguage) ? currentLanguage : 'en';
   const all  = (typeof translations!=='undefined') ? translations : {};
   const en   = all.en || {};
-  // 1) hand-written dictionary for this language
   if(all[lang] && all[lang][k]) return all[lang][k];
-  // 2) runtime-translated map (Google) keyed by the English source string
   const src = en[k] || '';
   if(typeof domTextMap!=='undefined' && domTextMap && domTextMap[src]) return domTextMap[src];
   if(typeof activeTranslations!=='undefined' && activeTranslations && activeTranslations[k]) return activeTranslations[k];
-  // 3) English fallback
   return src;
 }
 
 function startTutorial(){
-  // pick the tour that matches whatever screen is actually on-screen
-  const appVisible = document.getElementById('app') && getComputedStyle(document.getElementById('app')).display!=='none';
-  const obEl = document.getElementById('onboarding-page');
-  const obVisible = obEl && getComputedStyle(obEl).display!=='none';
-  _tutSteps = appVisible ? TUT_STEPS : (obVisible ? TUT_STEPS_OB : TUT_STEPS_LOGIN);
+  const appEl = document.getElementById('app');
+  const appVisible = appEl && getComputedStyle(appEl).display !== 'none';
+  const obEl  = document.getElementById('onboarding-page');
+  const obVisible = obEl && getComputedStyle(obEl).display !== 'none';
+  _tutSteps = appVisible ? GUIDE_STEPS : (obVisible ? TUT_STEPS_OB : TUT_STEPS_LOGIN);
   _tutIdx = 0;
+  _guideReturnPage = (typeof _lastPage!=='undefined' && _lastPage) ? _lastPage : 'dashboard';
   document.getElementById('tut-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
   showTutStep();
 }
+
+let _guideReturnPage = 'dashboard';
+
 function endTutorial(){
   document.getElementById('tut-overlay').classList.remove('show');
+  document.body.style.overflow = '';
   localStorage.setItem('fasal_tut_done','1');
+  const appEl = document.getElementById('app');
+  if(appEl && getComputedStyle(appEl).display !== 'none' && typeof navigateToPage==='function'){
+    navigateToPage(_guideReturnPage || 'dashboard');
+  }
 }
-function showTutStep(){
+
+/* Resolve a step's target for the current screen size */
+function _guideVisible(el){
+  if(!el) return false;
+  const cs = getComputedStyle(el);
+  if(cs.display==='none' || cs.visibility==='hidden' || parseFloat(cs.opacity)===0) return false;
+  const r = el.getBoundingClientRect();
+  /* offsetParent is null for position:fixed elements, so measure instead.
+     24px keeps real icon buttons (38px) while rejecting collapsed containers. */
+  return r.width >= 24 && r.height >= 16;
+}
+function _guideTarget(step){
+  const isPhone = window.innerWidth <= 768;
+  const list = [];
+  if(isPhone && step.selMobile) list.push(step.selMobile);
+  if(step.sel) list.push(...step.sel.split(',').map(s=>s.trim()));
+  for(const sel of list){
+    for(const el of document.querySelectorAll(sel)){
+      if(_guideVisible(el)) return el;
+    }
+  }
+  if(step.page){
+    const pg = document.getElementById(step.page);
+    if(_guideVisible(pg)) return pg;
+  }
+  return null;
+}
+
+
+/* Wait until this step's target is actually laid out and visible.
+   Force-settles reveal animations and renders lazy widgets each tick. */
+const _guideRendered = {};
+function _guideSettle(step, maxMs){
+  return new Promise(resolve=>{
+    const t0 = performance.now();
+    (function tick(){
+      const pg = step.page ? document.getElementById(step.page) : null;
+      if(pg){
+        pg.querySelectorAll('.reveal').forEach(el=>{
+          el.classList.add('in'); el.style.opacity=''; el.style.transform='';
+        });
+        if(!_guideRendered[step.page]){
+          _guideRendered[step.page] = true;
+          if(step.page === 'market-trends'){ try{ updatePriceCards(); }catch(e){} }
+          if(step.page === 'recommendations'){ try{ updateCarousel(); }catch(e){} }
+        }
+      }
+      if(_guideTarget(step) || performance.now() - t0 > maxMs) return resolve();
+      setTimeout(tick, 70);
+    })();
+  });
+}
+
+async function showTutStep(){
   const step = _tutSteps[_tutIdx];
   if(!step){ endTutorial(); return; }
-  let el = document.querySelector(step.sel);
-  // fall back to the bottom-dock equivalent on mobile
-  if((!el || !el.offsetParent) && step.sel.includes('data-page=')){
-    const pg = step.sel.match(/data-page="([^"]+)"/);
-    if(pg) el = document.querySelector('.bnav-item[data-page="'+pg[1]+'"]');
+  if(_guideBusy) return;
+
+  const overlay = document.getElementById('tut-overlay');
+  const hole    = document.getElementById('tut-hole');
+  const card    = document.getElementById('tut-card');
+
+  /* 0. Write the narration FIRST so the words always match the page we are
+        moving to, instead of lagging a step behind during the transition. */
+  _guidePaint(step);
+
+  /* 1. Navigate if this step lives on another page */
+  if(step.page && typeof navigateToPage === 'function'){
+    const cur = document.querySelector('.page.active');
+    if(!cur || cur.id !== step.page){
+      _guideBusy = true;
+      overlay.classList.add('moving');       // fade the spotlight during the move
+      navigateToPage(step.page);
+      /* Page transitions are timer-driven and content renders lazily, so a
+         fixed sleep raced them and the spotlight collapsed to nothing.
+         Poll until the target is genuinely measurable instead. */
+      await _guideSettle(step, 2200);
+      overlay.classList.remove('moving');
+      _guideBusy = false;
+    } else {
+      await _guideSettle(step, 700);
+    }
   }
-  const hole = document.getElementById('tut-hole');
-  const card = document.getElementById('tut-card');
-  if(el && el.offsetParent){
+
+  /* 2. Bring the target into view */
+  let el = _guideTarget(step);
+  if(el && !step.center){
+    try{
+      el.scrollIntoView({behavior: prefersReducedMotion()?'auto':'smooth', block:'center', inline:'nearest'});
+      await new Promise(r => setTimeout(r, prefersReducedMotion()?60:340));
+    }catch(e){}
+    /* Widgets like the crop ranking and price rail re-render their innerHTML,
+       which detaches the node we grabbed and makes it measure 0x0 — the
+       spotlight then collapsed to a 20px dot. Re-resolve before measuring. */
+    const fresh = _guideTarget(step);
+    if(fresh) el = fresh;
+    if(!el.isConnected || el.getBoundingClientRect().width < 24){
+      const pg = step.page ? document.getElementById(step.page) : null;
+      el = _guideVisible(pg) ? pg : null;
+    }
+  }
+
+  /* 3. Spotlight */
+  const isPhone = window.innerWidth <= 768;
+  if(el && !step.center){
     const r = el.getBoundingClientRect();
-    const pad = 8;
-    hole.style.cssText = `left:${r.left-pad}px;top:${r.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px;`+
-      `box-shadow:0 0 0 9999px rgba(10,6,2,0.72),0 0 0 3px var(--lime),0 0 40px var(--lime-glow);border-radius:18px;position:absolute;`;
-    let top = r.bottom + 16, left = Math.min(Math.max(r.left, 16), window.innerWidth-360);
-    if(top + 200 > window.innerHeight) top = Math.max(16, r.top - 210);
-    card.style.left = left+'px'; card.style.top = top+'px';
+    const pad = 10;
+    hole.style.display = 'block';
+    hole.style.left   = Math.max(4, r.left - pad) + 'px';
+    hole.style.top    = Math.max(4, r.top  - pad) + 'px';
+    hole.style.width  = Math.min(window.innerWidth - 8,  r.width  + pad*2) + 'px';
+    hole.style.height = Math.min(window.innerHeight - 8, r.height + pad*2) + 'px';
   } else {
-    hole.style.cssText='left:50%;top:50%;width:0;height:0';
-    card.style.left = 'calc(50% - 170px)'; card.style.top = '30%';
+    hole.style.display = 'none';
   }
-  document.getElementById('tut-title').textContent = tutText(step.key,'title') || step.key;
-  document.getElementById('tut-body').textContent  = tutText(step.key,'body');
-  document.getElementById("tut-step").textContent  = (_tutIdx+1)+"/"+_tutSteps.length;
-  document.getElementById('tut-prev').style.visibility = _tutIdx? 'visible':'hidden';
-  const nextBtn=document.getElementById('tut-next');
-  nextBtn.textContent = (_tutIdx===_tutSteps.length-1)
-    ? (tutText('tut_done')||'Done') : (tutText('tut_next')||'Next');
+
+  /* 4. Position the narration card (bottom sheet on phones via CSS) */
+  if(!isPhone){
+    if(el && !step.center){
+      const r = el.getBoundingClientRect();
+      const cw = 360, ch = card.offsetHeight || 210;
+      let left = r.left;
+      let top  = r.bottom + 16;
+      if(top + ch > window.innerHeight - 12) top = Math.max(12, r.top - ch - 16);
+      if(top + ch > window.innerHeight - 12) top = Math.max(12, (window.innerHeight - ch)/2);
+      left = Math.min(Math.max(12, left), window.innerWidth - cw - 12);
+      card.style.left = left + 'px';
+      card.style.top  = top + 'px';
+      card.style.transform = '';
+    } else {
+      card.style.left = '50%';
+      card.style.top  = '50%';
+      card.style.transform = 'translate(-50%,-50%)';
+    }
+  } else {
+    card.style.transform = '';
+  }
+
 }
+
+/* Narration + progress for one step */
+function _guidePaint(step){
+  const total = _tutSteps.length;
+  document.getElementById('tut-title').textContent = tutText(step.key,'title') || '';
+  document.getElementById('tut-body').textContent  = tutText(step.key,'body')  || '';
+  document.getElementById('tut-step').textContent  = (_tutIdx+1) + '/' + total;
+  const fill = document.getElementById('tut-progress-fill');
+  if(fill) fill.style.width = (((_tutIdx+1)/total)*100) + '%';
+  const chip = document.getElementById('tut-chip');
+  if(chip){
+    const label = step.page ? ((typeof pageTitles!=='undefined' && pageTitles[step.page]) || '') : '';
+    chip.style.display = label ? 'inline-flex' : 'none';
+    chip.innerHTML = label ? '<i class="fas fa-location-dot"></i> ' + label : '';
+  }
+  document.getElementById('tut-prev').style.visibility = _tutIdx ? 'visible' : 'hidden';
+  const nextBtn = document.getElementById('tut-next');
+  nextBtn.textContent = (_tutIdx === total-1) ? (tutText('tut_done')||'Done') : (tutText('tut_next')||'Next');
+}
+
+function guideNext(){ if(_guideBusy) return; _tutIdx++; if(_tutIdx >= _tutSteps.length){ endTutorial(); } else showTutStep(); }
+function guidePrev(){ if(_guideBusy) return; _tutIdx = Math.max(0,_tutIdx-1); showTutStep(); }
+
 function initTutorial(){
-  document.getElementById('tut-next').addEventListener('click',()=>{ _tutIdx++; showTutStep(); });
-  document.getElementById('tut-prev').addEventListener('click',()=>{ _tutIdx=Math.max(0,_tutIdx-1); showTutStep(); });
-  document.getElementById('tut-skip').addEventListener('click',endTutorial);
-  document.getElementById('tut-overlay').addEventListener('click',e=>{ if(e.target.id==='tut-overlay') endTutorial(); });
-  window.addEventListener('resize',()=>{ if(document.getElementById('tut-overlay').classList.contains('show')) showTutStep(); },{passive:true});
+  const next = document.getElementById('tut-next');
+  const prev = document.getElementById('tut-prev');
+  const skip = document.getElementById('tut-skip');
+  if(next && !next.dataset.wired){ next.dataset.wired='1'; next.addEventListener('click', guideNext); }
+  if(prev && !prev.dataset.wired){ prev.dataset.wired='1'; prev.addEventListener('click', guidePrev); }
+  if(skip && !skip.dataset.wired){ skip.dataset.wired='1'; skip.addEventListener('click', endTutorial); }
+  const ov = document.getElementById('tut-overlay');
+  if(ov && !ov.dataset.wired){
+    ov.dataset.wired='1';
+    ov.addEventListener('click', e=>{ if(e.target.id==='tut-overlay') endTutorial(); });
+  }
+  if(!window._tutKeys){
+    window._tutKeys = true;
+    document.addEventListener('keydown', e=>{
+      if(!document.getElementById('tut-overlay')?.classList.contains('show')) return;
+      if(e.key === 'Escape')      endTutorial();
+      if(e.key === 'ArrowRight')  guideNext();
+      if(e.key === 'ArrowLeft')   guidePrev();
+    });
+    let rt;
+    window.addEventListener('resize', ()=>{
+      if(!document.getElementById('tut-overlay')?.classList.contains('show')) return;
+      clearTimeout(rt); rt = setTimeout(showTutStep, 160);
+    }, {passive:true});
+  }
 }
 
 /* ── LEAFLET MAP ── */
@@ -6279,7 +6719,7 @@ function updateCarousel(){
     return crop.img?`<img src="${crop.img}" alt="${crop.name}">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(90,168,60,0.15),rgba(87,179,154,0.1));font-size:28px"><i class="fas ${crop.icon||'fa-seedling'}" style="color:var(--green-500)"></i></div>`;
   }
   function podiumCard(crop,i){
-    return `<div class="podium-card ${medalClasses[i]}" onclick="this.classList.toggle('expanded')">
+    return `<div class="podium-card ${medalClasses[i]}" title="Tap to open the profit simulator" onclick="openFarmSim('${String(crop.name).replace(/'/g,"\\'")}')">
       <div class="rank-badge">${i+1}</div>
       <div class="crop-img">${makeImg(crop)}</div>
       <div class="crop-rank-name">${crop.name}</div>
@@ -6317,7 +6757,7 @@ function updateCarousel(){
     othersHtml='<div class="others-column"><h4 data-i18n="other_matches">Other Matches</h4><div class="others-grid">';
     others.forEach((crop,i)=>{
       const idx=i+4;
-      othersHtml+=`<div class="other-crop-card" style="animation-delay:${0.2+i*0.1}s">
+      othersHtml+=`<div class="other-crop-card" title="Tap to open the profit simulator" onclick="openFarmSim('${String(crop.name).replace(/'/g,"\\'")}')" style="animation-delay:${0.2+i*0.1}s">
         <div class="other-rank">${idx}</div>
         <div class="other-img">${makeImg(crop)}</div>
         <div class="other-info">
@@ -6347,10 +6787,12 @@ function buildFarmContext(){
 
 /* ─────────────────────────────────────
    CHATBOT — Groq free API (LLaMA 3.1-8B)
-   Set your Groq API key on the line below.
-   Get a FREE key at: https://console.groq.com
+/* ─────────────────────────────────────
+   CHATBOT — Groq API / Serverless Proxy
    ───────────────────────────────────── */
 const GROQ_API_KEY = 'YOUR_GROQ_API_KEY_HERE';
+const GROQ_MODELS = ['groq/compound-mini','groq/compound','openai/gpt-oss-20b','llama-3.1-8b-instant'];
+let GROQ_MODEL = localStorage.getItem('groqModel') || GROQ_MODELS[0];
 
 async function sendAIMessage(){
   const inp=document.getElementById('chat-input');
@@ -6365,19 +6807,6 @@ async function sendAIMessage(){
   typing.className='message ai-message'; typing.id='typing-indicator';
   typing.innerHTML='<span style="display:flex;gap:5px;align-items:center;padding:2px 0"><span style="width:7px;height:7px;background:var(--green-400);border-radius:50%;animation:pulse 1s 0s ease infinite;box-shadow:0 0 6px var(--green-400)"></span><span style="width:7px;height:7px;background:var(--green-400);border-radius:50%;animation:pulse 1s 0.2s ease infinite;box-shadow:0 0 6px var(--green-400)"></span><span style="width:7px;height:7px;background:var(--green-400);border-radius:50%;animation:pulse 1s 0.4s ease infinite;box-shadow:0 0 6px var(--green-400)"></span></span>';
   box.appendChild(typing); box.scrollTop=box.scrollHeight;
-
-  // Check if Groq key is configured
-  if(!GROQ_API_KEY || GROQ_API_KEY === 'YOUR_GROQ_API_KEY_HERE' || GROQ_API_KEY.length < 10){
-    if(typing.parentNode) typing.remove();
-    const am=document.createElement('div'); am.className='message ai-message';
-    am.textContent='⚠️ CropLens AI needs a free Groq API key to work. Open index.html and replace YOUR_GROQ_API_KEY_HERE with your key from console.groq.com (free, no credit card). For now, using local knowledge base.';
-    box.appendChild(am); box.scrollTop=box.scrollHeight;
-    // Still give local answer
-    const la=document.createElement('div'); la.className='message ai-message';
-    la.textContent=genLocalResponse(msg);
-    box.appendChild(la); box.scrollTop=box.scrollHeight;
-    return;
-  }
 
   try{
     const clLang = document.getElementById('croplens-lang')?.value || 'en';
@@ -6395,45 +6824,48 @@ LANGUAGE INSTRUCTION: ${langInstructions[clLang] || langInstructions.en}
 ${buildFarmContext()}`;
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),30000);
-    
-    let res = await fetch('/api/chat', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'llama-3.1-8b-instant',
-        messages:[{role:'system',content:systemMsg},{role:'user',content:msg}],
-        max_tokens:300,
-        temperature:0.7
-      }),
-      signal:controller.signal
-    }).catch(() => null);
 
-    if(!res || !res.ok){
-      if(GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE' && GROQ_API_KEY.length >= 10){
-        res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_API_KEY},
-          body:JSON.stringify({
-            model:'llama-3.1-8b-instant',
-            messages:[{role:'system',content:systemMsg},{role:'user',content:msg}],
-            max_tokens:300,
-            temperature:0.7
-          }),
-          signal:controller.signal
-        });
-      }
+    let res;
+    // 1. Try server proxy /api/chat
+    try {
+      res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [{ role: 'system', content: systemMsg }, { role: 'user', content: msg }],
+          max_tokens: 300,
+          temperature: 0.7
+        }),
+        signal: controller.signal
+      });
+    } catch(e) {}
+
+    // 2. Direct client fallback if key provided
+    if ((!res || !res.ok) && GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE') {
+      res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [{ role: 'system', content: systemMsg }, { role: 'user', content: msg }],
+          max_tokens: 300,
+          temperature: 0.7
+        }),
+        signal: controller.signal
+      });
     }
 
     clearTimeout(timer);
-    typing.remove();
+    if(typing.parentNode) typing.remove();
 
     if(!res || !res.ok){
-      const am=document.createElement('div'); am.className='message ai-message';
-      am.textContent=genLocalResponse(msg);
-      box.appendChild(am); box.scrollTop=box.scrollHeight;
+      // Fallback to local response
+      const la=document.createElement('div'); la.className='message ai-message';
+      la.textContent=genLocalResponse(msg);
+      box.appendChild(la); box.scrollTop=box.scrollHeight;
       return;
     }
-
     const data=await res.json();
     const reply=(data.choices?.[0]?.message?.content||'No response').trim();
     const am=document.createElement('div');
@@ -6742,213 +7174,178 @@ function pdxResizeImage(file){
   });
 }
 
-/* ---- On-device model (ONNX Runtime Web). Loads once, then runs fully in-browser. ---- */
-const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js';
-let pdxSessionPromise = null;
-let pdxClassNames = null;
-
-async function loadOrt() {
-    if (window.ort) return;
-    return new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = ORT_URL;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-    });
-}
-
-function pdxGetLocalModel() {
-    if (pdxSessionPromise) return pdxSessionPromise;
-    pdxSessionPromise = (async () => {
-        await loadOrt();
-        
-        // Disable WASM multithreading to avoid cross-origin isolation issues
-        ort.env.wasm.numThreads = 1; 
-        
-        // Load class names
-        const res = await fetch('assets/models/class_names.json');
-        pdxClassNames = await res.json();
-        
-        // Load ONNX model with CDN fallback
-        let session;
-        try {
-            session = await ort.InferenceSession.create('assets/models/convnext_tiny_plantdisease.onnx', { executionProviders: ['wasm'] });
-        } catch(e) {
-            console.log('Loading ONNX model from GitHub LFS CDN...');
-            session = await ort.InferenceSession.create('https://media.githubusercontent.com/media/hyper10203/FasalAI/main/assets/models/convnext_tiny_plantdisease.onnx', { executionProviders: ['wasm'] });
-        }
-        return session;
-    })();
-    return pdxSessionPromise;
-}
-
-function getCenterCropped224(dataUrl) {
-    return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 224; canvas.height = 224;
-            const ctx = canvas.getContext('2d');
-            
-            // PyTorch equivalent: Resize(256) followed by CenterCrop(224)
-            const scale = 256 / Math.min(img.width, img.height);
-            const srcSizeX = 224 / scale;
-            const srcSizeY = 224 / scale;
-            const sx = (img.width - srcSizeX) / 2;
-            const sy = (img.height - srcSizeY) / 2;
-            
-            ctx.drawImage(img, sx, sy, srcSizeX, srcSizeY, 0, 0, 224, 224);
-            resolve(canvas);
-        };
-        img.src = dataUrl;
-    });
-}
-
-function preprocessImage(canvas) {
-    const ctx = canvas.getContext('2d');
-    const imgData = ctx.getImageData(0, 0, 224, 224).data;
-    const float32Data = new Float32Array(3 * 224 * 224);
-    // ImageNet normalization
-    const mean = [0.485, 0.456, 0.406];
-    const std = [0.229, 0.224, 0.225];
-    for (let i = 0; i < 224 * 224; i++) {
-        let r = imgData[i * 4] / 255.0;
-        let g = imgData[i * 4 + 1] / 255.0;
-        let b = imgData[i * 4 + 2] / 255.0;
-        float32Data[i] = (r - mean[0]) / std[0];
-        float32Data[i + 224 * 224] = (g - mean[1]) / std[1];
-        float32Data[i + 2 * 224 * 224] = (b - mean[2]) / std[2];
-    }
-    return new ort.Tensor('float32', float32Data, [1, 3, 224, 224]);
+/* ---- On-device model (transformers.js + ONNX ViT). Loads once, then runs fully in-browser. ---- */
+const PDX_MODEL_ID = 'cabrel09/crop_leaf_disease_detector';
+const PDX_TFJS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2/dist/transformers.min.js';
+let pdxPipePromise = null;
+let pdxModelLoaded = false;
+function pdxGetLocalModel(){
+  if(pdxPipePromise) return pdxPipePromise;
+  pdxPipePromise = (async () => {
+    const mod = await import(PDX_TFJS_URL);
+    mod.env.allowLocalModels = false;
+    const pipe = await mod.pipeline('image-classification', PDX_MODEL_ID, { dtype: 'fp32' });
+    pdxModelLoaded = true;
+    return pipe;
+  })();
+  return pdxPipePromise;
 }
 
 /* ---- Detection: on-device model first, then remote APIs, then colour heuristic ---- */
 async function pdxDetect(dataUrl, onStage){
-  // 1. PRIMARY — on-device ConvNeXt model (highly accurate, works offline once cached)
+  /* ── TIER 1 · PlantPulse on-device model ──────────────────────────
+     Runs locally, needs no network and no key. */
   try{
-    if(!pdxSessionPromise && onStage) onStage('Loading Custom AI model (~108 MB, cached after first load)…');
-    const session = await pdxGetLocalModel();
+    if(!pdxModelLoaded && onStage) onStage('Loading PlantPulse model (first run)…');
+    const pipe = await pdxGetLocalModel();
     if(onStage) onStage('Classifying with on-device AI…');
-    
-    const croppedCanvas = await getCenterCropped224(dataUrl);
-    const tensor = preprocessImage(croppedCanvas);
-    
-    const feeds = { [session.inputNames[0]]: tensor };
-    const results = await session.run(feeds);
-    const output = results[session.outputNames[0]].data;
-    
-    // Mask out non-matching classes if crop is selected (replicates PlantPulse backend exactly)
-    if (pdxSelectedCrop) {
-        const cropFilter = pdxSelectedCrop.toLowerCase();
-        let hasAnyMatch = false;
-        
-        // First pass: check if there are ANY matching classes for the selected crop
-        for (let i = 0; i < output.length; i++) {
-            let pCrop = pdxClassNames[i].split("___")[0].replace("_", " ").toLowerCase();
-            let match = false;
-            if (cropFilter === "cherry" && pCrop.includes("cherry")) match = true;
-            else if (cropFilter === "peach" && pCrop.includes("peach")) match = true;
-            else if (cropFilter === "pepper" && pCrop.includes("pepper")) match = true;
-            else if (pCrop.includes(cropFilter)) match = true;
-            
-            if (match) hasAnyMatch = true;
-        }
-        
-        // Only apply mask if the model actually supports this crop
-        if (hasAnyMatch) {
-            for (let i = 0; i < output.length; i++) {
-                let pCrop = pdxClassNames[i].split("___")[0].replace("_", " ").toLowerCase();
-                let match = false;
-                if (cropFilter === "cherry" && pCrop.includes("cherry")) match = true;
-                else if (cropFilter === "peach" && pCrop.includes("peach")) match = true;
-                else if (cropFilter === "pepper" && pCrop.includes("pepper")) match = true;
-                else if (pCrop.includes(cropFilter)) match = true;
-                
-                if (!match) {
-                    output[i] = -Infinity;
-                }
-            }
-        }
-    }
-    
-    // Softmax over remaining classes
-    let max = -Infinity;
-    for(let i=0; i<output.length; i++) if(output[i] > max) max = output[i];
-    
-    let sum = 0;
-    const probs = new Float32Array(output.length);
-    for(let i=0; i<output.length; i++) {
-        if (output[i] === -Infinity) {
-            probs[i] = 0;
-        } else {
-            probs[i] = Math.exp(output[i] - max);
-            sum += probs[i];
-        }
-    }
-    if (sum > 0) {
-        for(let i=0; i<output.length; i++) probs[i] /= sum;
-    }
-    
-    // Sort and get top 6
-    let topK = [];
-    for(let i=0; i<probs.length; i++) {
-        topK.push({ label: pdxClassNames[i], score: probs[i] });
-    }
-    topK.sort((a,b) => b.score - a.score);
-    topK = topK.slice(0, 6);
+    const out = await pipe(dataUrl, { topk: 6 });
+    let topK = (out||[]).map(o=>({label:o.label, score:o.score||0}));
 
-    if(topK.length) return {topK, source:'ai-local'};
-  }catch(e){ console.warn('PDX on-device model failed:', e); }
+    // "Invalid" = not a recognisable crop leaf; say so instead of guessing
+    if(topK.length && topK[0].label==='Invalid' && topK[0].score>0.45){
+      return {topK:[{label:'Invalid',score:topK[0].score}], source:'invalid'};
+    }
+    topK = topK.filter(t=>t.label!=='Invalid');
 
-  // 2. FALLBACK — remote inference APIs (only reachable online)
-  const alt = await pdxDetectRemote(dataUrl, onStage);
-  if(alt) return alt;
+    // Treat a weak or off-crop result as a miss and fall through
+    const best = topK[0];
+    let weak = !best || best.score < 0.45;
+    if(!weak && pdxSelectedCrop){
+      const c = pdxSelectedCrop.toLowerCase().replace(/[^a-z]/g,'');
+      weak = !topK.some(t=>t.label.toLowerCase().replace(/[^a-z]/g,'').includes(c));
+    }
+    if(!weak && topK.length) return {topK, source:'ai-local'};
+    if(onStage) onStage('Cross-checking with Pest Patrol…');
+  }catch(e){ console.warn('Tier 1 (PlantPulse on-device) failed:', e && e.message); }
 
-  // 3. LAST RESORT — canvas colour heuristic (honest, low-confidence)
+  /* ── TIER 2 · SoilScope Pest Patrol ───────────────────────────────
+     Roboflow crop models, then the original canvas colour + climate
+     reasoning that Pest Patrol shipped with. */
+  try{
+    if(onStage) onStage('Running Pest Patrol detection…');
+    const pp = await pdxDetectPestPatrol(dataUrl, onStage);
+    if(pp) return pp;
+  }catch(e){ console.warn('Tier 2 (Pest Patrol) failed:', e && e.message); }
+
+  /* ── TIER 3 · Hugging Face inference API ──────────────────────────*/
+  try{
+    if(onStage) onStage('Checking Hugging Face models…');
+    const hf = await pdxDetectHF(dataUrl, onStage);
+    if(hf) return hf;
+  }catch(e){ console.warn('Tier 3 (Hugging Face) failed:', e && e.message); }
+
+  /* Nothing reachable — be honest rather than invent a disease */
   if(onStage) onStage('Analysing image colour patterns…');
   return pdxDetectHeuristic(dataUrl);
 }
 
-async function pdxDetectRemote(dataUrl, onStage){
-  const b64=dataUrl.split(',')[1];
-  const bin=atob(b64);const bytes=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-  const blob=new Blob([bytes],{type:'image/jpeg'});
-  // HuggingFace plant-disease classifiers
-  for(const modelUrl of (typeof HF_MODELS!=='undefined'?HF_MODELS:[])){
+/* ── TIER 2 — SoilScope's original Pest Patrol pipeline ── */
+async function pdxDetectPestPatrol(dataUrl, onStage){
+  const b64 = dataUrl.split(',')[1];
+
+  // 2a. Roboflow workflow, then the direct SoilScope model
+  if(typeof ROBOFLOW_API_KEY!=='undefined' && ROBOFLOW_API_KEY && ROBOFLOW_API_KEY!=='YOUR_ROBOFLOW_KEY_HERE'){
     try{
-      const headers={'Content-Type':'application/octet-stream'};
-      if(typeof HF_PLANT_KEY!=='undefined'&&HF_PLANT_KEY&&HF_PLANT_KEY!=='YOUR_HF_TOKEN_HERE') headers['Authorization']='Bearer '+HF_PLANT_KEY;
-      let res=await fetch(modelUrl,{method:'POST',headers,body:blob,signal:AbortSignal.timeout(20000)});
-      if(res.status===503){ await new Promise(r=>setTimeout(r,12000)); res=await fetch(modelUrl,{method:'POST',headers,body:blob,signal:AbortSignal.timeout(20000)}); }
+      const res = await fetch(ROBOFLOW_MODEL_URL,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({api_key:ROBOFLOW_API_KEY, inputs:{image:{type:'base64', value:b64}}}),
+        signal: AbortSignal.timeout(25000)
+      });
       if(res.ok){
-        const data=await res.json();
-        if(Array.isArray(data)&&data.length&&data[0].label){
-          return {topK:data.map(d=>({label:d.label,score:d.score||0})),source:'ai'};
+        const data = await res.json();
+        const out0 = (data.outputs||[])[0] || {};
+        let preds = (out0.detection_predictions||{}).predictions || [];
+        if(!preds.length) preds = (out0.predictions||{}).predictions || (Array.isArray(out0.predictions)?out0.predictions:[]);
+        preds = preds.slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+        if(preds.length && preds[0].class){
+          return {topK: preds.map(p=>({label:p.class, score:p.confidence||0})), source:'pest-patrol'};
         }
       }
-    }catch(e){ console.warn('PDX HF model failed:',e.message); }
-  }
-  // Roboflow via serverless proxy /api/pdx or direct client key
-  try{
-    const res=await fetch('/api/pdx',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b64,signal:AbortSignal.timeout(25000)}).catch(()=>null);
-    if(res && res.ok){
-      const d=await res.json();const preds=(d.predictions||[]).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
-      if(preds.length) return {topK:preds.map(p=>({label:p.class||'',score:p.confidence||0})),source:'ai'};
-    }
-  }catch(e){}
+    }catch(e){ console.warn('Roboflow workflow failed:', e.message); }
 
-  if(typeof ROBOFLOW_API_KEY!=='undefined'&&ROBOFLOW_API_KEY&&ROBOFLOW_API_KEY!=='YOUR_ROBOFLOW_API_KEY_HERE'&&ROBOFLOW_API_KEY!=='YOUR_ROBOFLOW_KEY_HERE'){
     try{
-      const res=await fetch(ROBOFLOW_DIRECT_URL+'?api_key='+ROBOFLOW_API_KEY,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b64,signal:AbortSignal.timeout(25000)});
+      const res = await fetch(ROBOFLOW_DIRECT_URL+'?api_key='+ROBOFLOW_API_KEY,{
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:b64, signal:AbortSignal.timeout(25000)
+      });
       if(res.ok){
-        const d=await res.json();const preds=(d.predictions||[]).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
-        if(preds.length) return {topK:preds.map(p=>({label:p.class||'',score:p.confidence||0})),source:'ai'};
+        const d = await res.json();
+        const preds = (d.predictions||[]).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+        if(preds.length && preds[0].class){
+          return {topK: preds.map(p=>({label:p.class, score:p.confidence||0})), source:'pest-patrol'};
+        }
       }
-    }catch(e){ console.warn('PDX Roboflow failed:',e.message); }
+    }catch(e){ console.warn('Roboflow direct failed:', e.message); }
+  }
+
+  // 2b. Canvas colour analysis + local climate reasoning (Pest Patrol's own logic)
+  try{
+    const colors = await analyzeImageColors(dataUrl);
+    const fd = (typeof currentFarmData!=='undefined' && currentFarmData) ? currentFarmData : {};
+    const temp = (fd.air && fd.air.temperature) || 25;
+    const hum  = (fd.air && fd.air.humidity)    || 60;
+    let name = null, score = 0;
+
+    if(colors.greenPct > 35 && colors.brownPct < 8 && colors.yellowPct < 8 && colors.darkPct < 8){
+      return {topK:[{label:(pdxSelectedCrop||'Crop')+'_healthy', score:Math.min(0.85, 0.6+colors.greenPct/300)}], source:'pest-patrol'};
+    }
+    if(colors.brownPct > 8 && colors.darkPct > 5){
+      name = hum > 70 ? 'Downy Mildew' : 'Early Blight';
+      score = Math.min(0.72, 0.40 + colors.brownPct/100);
+    } else if(colors.yellowPct > 8){
+      name = 'Aphids';           score = Math.min(0.65, 0.35 + colors.yellowPct/100);
+    } else if(colors.whitePct > 8){
+      name = 'Powdery Mildew';   score = Math.min(0.68, 0.38 + colors.whitePct/100);
+    } else if(colors.brownPct > 5){
+      name = 'Spider Mites';     score = Math.min(0.60, 0.35 + colors.brownPct/100);
+    } else if(hum > 65 && temp > 20){
+      name = 'Downy Mildew';     score = 0.52;
+    } else if(temp > 30){
+      name = 'Spider Mites';     score = 0.50;
+    }
+    if(name){
+      const hit = (typeof PEST_DB!=='undefined') ? PEST_DB.find(p=>p.name===name) : null;
+      return {topK:[{label:(hit? hit.name : name), score}], source:'pest-patrol'};
+    }
+  }catch(e){ console.warn('Pest Patrol colour analysis failed:', e.message); }
+
+  return null;
+}
+
+/* ── TIER 3 — Hugging Face inference API ── */
+async function pdxDetectHF(dataUrl, onStage){
+  const b64 = dataUrl.split(',')[1];
+  const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], {type:'image/jpeg'});
+
+  for(const modelUrl of (typeof HF_MODELS!=='undefined'?HF_MODELS:[])){
+    try{
+      const headers = {'Content-Type':'application/octet-stream'};
+      if(typeof HF_PLANT_KEY!=='undefined' && HF_PLANT_KEY && HF_PLANT_KEY!=='YOUR_HF_TOKEN_HERE'){
+        headers['Authorization'] = 'Bearer ' + HF_PLANT_KEY;
+      }
+      let res = await fetch(modelUrl,{method:'POST',headers,body:blob,signal:AbortSignal.timeout(20000)});
+      if(res.status === 503){                       // model cold-starting
+        if(onStage) onStage('Hugging Face model warming up…');
+        await new Promise(r=>setTimeout(r,12000));
+        res = await fetch(modelUrl,{method:'POST',headers,body:blob,signal:AbortSignal.timeout(20000)});
+      }
+      if(res.ok){
+        const data = await res.json();
+        if(Array.isArray(data) && data.length && data[0].label){
+          return {topK: data.map(d=>({label:d.label, score:d.score||0})), source:'ai-hf'};
+        }
+      }
+    }catch(e){ console.warn('HF model failed:', e.message); }
   }
   return null;
+}
+
+/* kept for callers that still reference the old name */
+async function pdxDetectRemote(dataUrl, onStage){
+  return (await pdxDetectPestPatrol(dataUrl,onStage)) || (await pdxDetectHF(dataUrl,onStage));
 }
 
 async function pdxDetectHeuristic(dataUrl){
@@ -7014,7 +7411,11 @@ async function runPlantDiagnosis(){
     pdxRenderHistory();
     badge.textContent=advice.status==='healthy'?'HEALTHY':'DIAGNOSED';
     badge.style.cssText='font-size:10px;background:rgba(90,168,60,0.1);color:var(--green-600);border-color:rgba(90,168,60,0.2)';
-    const srcMsg=source==='ai-local'?'On-device AI: ':source==='ai'?'AI diagnosis: ':'Estimated: ';
+    const srcMsg = source==='ai-local'   ? 'PlantPulse AI: '
+                 : source==='pest-patrol' ? 'Pest Patrol: '
+                 : source==='ai-hf'       ? 'Hugging Face AI: '
+                 : source==='heuristic'   ? 'Estimated: '
+                 : 'AI diagnosis: ';
     showToast(srcMsg+advice.disease);
   }catch(e){
     console.warn('PDX diagnosis error:',e);
@@ -7043,7 +7444,11 @@ function pdxRenderResult(best,topK,advice,source){
   pdxAnimateRing(best.score);
   // Names
   document.getElementById('pdx-pred-name').textContent=advice.disease;
-  const srcTag=source==='ai-local'?'  ·  On-device AI':source==='heuristic'?'  ·  image estimate':'  ·  AI';
+  const srcTag = source==='ai-local'   ? '  ·  PlantPulse on-device AI'
+               : source==='pest-patrol' ? '  ·  Pest Patrol'
+               : source==='ai-hf'       ? '  ·  Hugging Face AI'
+               : source==='heuristic'   ? '  ·  image estimate'
+               : '  ·  AI';
   document.getElementById('pdx-pred-crop').textContent=advice.crop+srcTag;
   const pill=document.getElementById('pdx-status-pill');
   if(advice.status==='healthy'){ pill.className='pdx-status-pill pdx-status-healthy'; pill.innerHTML='<i class="fas fa-circle-check"></i> Healthy'; }
@@ -7970,36 +8375,451 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Init carousel placeholder
   updateCarousel();
 });
-</script>
 
-<script>
-/* ── Universal Window Resize & Orientation Handler for Leaflet & Charts ── */
-(function() {
-  function handleResize() {
-    // 1. Dynamic Viewport Height Fix
-    let vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
+/* ═════════════════════════════════════════════════════════════════
+   FIREBASE AUTH — Google + Email/Password
+   Firebase Console must have: Authentication → Sign-in method →
+   Google + Email/Password enabled, and your domain in Authorized domains.
+   ═════════════════════════════════════════════════════════════════ */
+let fbAuth = null;
+try{
+  if(typeof firebase !== 'undefined' && firebase.auth){
+    fbAuth = firebase.auth();
+    console.log('Firebase Auth ready');
+  }
+}catch(e){ console.warn('Firebase Auth unavailable:', e.message); }
 
-    // 2. Leaflet Map Invalidation
-    if (typeof map !== 'undefined' && map && typeof map.invalidateSize === 'function') {
-      setTimeout(() => { map.invalidateSize(); }, 200);
+function authPane(id){
+  document.querySelectorAll('.auth-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+}
+
+function authError(e){
+  const map = {
+    'auth/invalid-email':'That email address does not look right.',
+    'auth/user-not-found':'No account found with that email.',
+    'auth/wrong-password':'Incorrect password. Please try again.',
+    'auth/invalid-credential':'Email or password is incorrect.',
+    'auth/email-already-in-use':'An account already exists with that email.',
+    'auth/weak-password':'Password should be at least 6 characters.',
+    'auth/popup-closed-by-user':'Sign-in was cancelled.',
+    'auth/popup-blocked':'Your browser blocked the popup. Allow popups and try again.',
+    'auth/network-request-failed':'Network problem — check your connection.',
+    'auth/operation-not-allowed':'This sign-in method is not enabled yet in Firebase.',
+    'auth/unauthorized-domain':'This domain is not authorised in Firebase Auth settings.'
+  };
+  return map[e?.code] || e?.message || 'Something went wrong. Please try again.';
+}
+
+async function signInWithGoogle(){
+  if(!fbAuth){ showToast('Google sign-in is not configured yet',true); return; }
+  const btn = document.getElementById('btn-google');
+  const orig = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting…'; }
+  try{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const res = await fbAuth.signInWithPopup(provider);
+    await completeAuthLogin(res.user, 'google');
+  }catch(e){
+    console.warn('Google sign-in failed:', e);
+    showToast(authError(e), true);
+  }finally{
+    if(btn){ btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+async function emailSignIn(){
+  const email = document.getElementById('email-login-address').value.trim();
+  const pass  = document.getElementById('email-login-password').value;
+  if(!email || !pass){ showToast('Please enter your email and password',true); return; }
+  if(!fbAuth){ showToast('Email sign-in is not configured yet',true); return; }
+  const btn = document.getElementById('btn-email-signin');
+  const orig = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Signing in…';
+  try{
+    const res = await fbAuth.signInWithEmailAndPassword(email, pass);
+    await completeAuthLogin(res.user, 'email');
+  }catch(e){ showToast(authError(e), true); }
+  finally{ btn.disabled = false; btn.innerHTML = orig; }
+}
+
+async function emailSignUp(){
+  const name  = document.getElementById('email-signup-name').value.trim();
+  const email = document.getElementById('email-signup-address').value.trim();
+  const pass  = document.getElementById('email-signup-password').value;
+  if(!name || !email || !pass){ showToast('Please fill in all fields',true); return; }
+  if(pass.length < 6){ showToast('Password should be at least 6 characters',true); return; }
+  if(!fbAuth){ showToast('Email sign-up is not configured yet',true); return; }
+  const btn = document.getElementById('btn-email-signup');
+  const orig = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Creating…';
+  try{
+    const res = await fbAuth.createUserWithEmailAndPassword(email, pass);
+    await res.user.updateProfile({ displayName: name });
+    await completeAuthLogin(res.user, 'email', name);
+  }catch(e){ showToast(authError(e), true); }
+  finally{ btn.disabled = false; btn.innerHTML = orig; }
+}
+
+async function emailResetPassword(){
+  const email = document.getElementById('email-login-address').value.trim();
+  if(!email){ showToast('Enter your email address first',true); return; }
+  if(!fbAuth) return;
+  try{
+    await fbAuth.sendPasswordResetEmail(email);
+    showToast('Password reset link sent to your email');
+  }catch(e){ showToast(authError(e), true); }
+}
+
+/* Bridges Firebase Auth into the app's existing session model */
+async function completeAuthLogin(user, method, fallbackName){
+  if(!user) return;
+  const name = user.displayName || fallbackName || (user.email ? user.email.split('@')[0] : 'Farmer');
+  const key  = sanitizeKey(user.email || user.uid);
+
+  let existing = {};
+  try{
+    if(typeof fbGetAccount === 'function'){
+      const cloud = await fbGetAccount(key);
+      if(cloud) existing = cloud;
     }
-
-    // 3. Chart.js Invalidation
-    if (typeof Chart !== 'undefined' && Chart.instances) {
-      Object.keys(Chart.instances).forEach(key => {
-        try { Chart.instances[key].resize(); } catch(e){}
-      });
-    }
+  }catch(e){ console.warn('cloud account read failed:', e.message); }
+  if(!existing || !Object.keys(existing).length){
+    try{ existing = getAllAccounts()[key] || {}; }catch(e){ existing = {}; }
   }
 
-  window.addEventListener('resize', handleResize);
-  window.addEventListener('orientationchange', () => {
-    setTimeout(handleResize, 300);
-  });
-  document.addEventListener('DOMContentLoaded', handleResize);
-})();
-</script>
+  const now = new Date();
+  const account = {
+    ...existing,
+    name: existing.name || name,
+    username: user.email || user.uid,
+    initial: (existing.name || name).charAt(0).toUpperCase(),
+    phone: existing.phone || user.phoneNumber || '',
+    email: user.email || '',
+    photo: user.photoURL || existing.photo || '',
+    provider: method,
+    uid: user.uid,
+    created: existing.created || now.toISOString(),
+    createdDate: existing.createdDate || now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),
+    loginDate: now.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),
+    lastLogin: now.toISOString(),
+    language: (typeof currentLanguage !== 'undefined' ? currentLanguage : 'en')
+  };
 
+  try{
+    const accs = getAllAccounts();
+    accs[key] = { ...(accs[key]||{}), ...account };
+    saveAllAccounts(accs);
+    localStorage.setItem('userData', JSON.stringify(account));
+    currentUser = account;
+    if(typeof fbSaveAccount === 'function') fbSaveAccount(key, account);
+  }catch(e){ console.warn('Session persist failed:', e); }
+
+  showToast('Welcome, ' + account.name + '!');
+  const seen = localStorage.getItem('fasal_onboarded') || localStorage.getItem('soilscope_onboarded');
+  if(!seen && typeof showOnboarding === 'function'){ showOnboarding(); }
+  else if(typeof launchApp === 'function'){ launchApp(); }
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   FARM PROFIT SIMULATOR
+   Indicative Indian per-acre figures — planning estimates, not
+   guaranteed returns. MSP overrides price where notified.
+   ═════════════════════════════════════════════════════════════════ */
+const CROP_ECONOMICS = {
+  'Wheat':     {yieldQtl:20,  costAcre:22000, priceQtl:2425, mspKey:'Wheat'},
+  'Rice':      {yieldQtl:25,  costAcre:28000, priceQtl:2369, mspKey:'Paddy'},
+  'Maize':     {yieldQtl:22,  costAcre:20000, priceQtl:2365, mspKey:'Maize'},
+  'Tomatoes':  {yieldQtl:220, costAcre:82000, priceQtl:900},
+  'Potatoes':  {yieldQtl:110, costAcre:62000, priceQtl:1150},
+  'Soybean':   {yieldQtl:10,  costAcre:18000, priceQtl:5020, mspKey:'Soybean'},
+  'Cotton':    {yieldQtl:8,   costAcre:35000, priceQtl:7710, mspKey:'Cotton'},
+  'Sugarcane': {yieldQtl:340, costAcre:46000, priceQtl:355,  mspKey:'Sugarcane'},
+  'Chickpea':  {yieldQtl:8,   costAcre:18000, priceQtl:5650, mspKey:'Chickpea'},
+  'Mustard':   {yieldQtl:7,   costAcre:15000, priceQtl:6250, mspKey:'Mustard'},
+  'Onion':     {yieldQtl:120, costAcre:56000, priceQtl:1450},
+  'Garlic':    {yieldQtl:50,  costAcre:72000, priceQtl:4800},
+  'Citrus':    {yieldQtl:80,  costAcre:52000, priceQtl:2400},
+  'Dates':     {yieldQtl:30,  costAcre:60000, priceQtl:7500},
+  'Barley':    {yieldQtl:15,  costAcre:15000, priceQtl:1865, mspKey:'Barley'}
+};
+const SIM_DEFAULT = {yieldQtl:18, costAcre:25000, priceQtl:2200};
+let simState = {crop:null, acres:2, investPct:50, econ:null};
+
+function prefersReducedMotion(){
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function retranslate(el){
+  try{
+    if(typeof currentLanguage!=='undefined' && currentLanguage!=='en' && typeof translateDOMContent==='function'){
+      translateDOMContent(currentLanguage);
+    }
+  }catch(e){}
+}
+
+function resolvePrice(cropName, econ){
+  if(econ.mspKey && typeof MSP_DATA !== 'undefined'){
+    const hit = MSP_DATA.find(m => m.crop && m.crop.toLowerCase().includes(econ.mspKey.toLowerCase()));
+    if(hit && hit.mspQtl) return {price: hit.mspQtl, source: 'MSP'};
+  }
+  return {price: econ.priceQtl, source: 'market est.'};
+}
+
+function fmtINR(n){
+  n = Math.round(n);
+  const sign = n < 0 ? '-' : '';
+  const a = Math.abs(n);
+  if(a >= 10000000) return sign + '₹' + (a/10000000).toFixed(2) + ' Cr';
+  if(a >= 100000)   return sign + '₹' + (a/100000).toFixed(2) + ' L';
+  return sign + '₹' + a.toLocaleString('en-IN');
+}
+
+function openFarmSim(cropName){
+  const crops = (typeof currentFarmData !== 'undefined' && currentFarmData && currentFarmData.crops) ? currentFarmData.crops : [];
+  const crop = crops.find(c => c.name === cropName);
+  if(!crop){ showToast('Set your farm location first to run the simulator', true); return; }
+
+  const econ = CROP_ECONOMICS[cropName] || SIM_DEFAULT;
+  simState = {crop, acres:2, investPct:50, econ};
+
+  document.getElementById('sim-crop-name').textContent = crop.name;
+  document.getElementById('sim-crop-type').textContent =
+    (crop.type ? crop.type.charAt(0).toUpperCase()+crop.type.slice(1) : 'Crop') +
+    (crop.maturity ? ' · ~' + crop.maturity + ' days' : '');
+  document.getElementById('sim-crop-match').innerHTML =
+    '<i class="fas fa-bullseye"></i> ' + (crop.match||0) + '% match for your farm';
+  document.getElementById('sim-crop-icon').innerHTML = crop.img
+    ? `<img src="${crop.img}" alt="${crop.name}">`
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--green-500),var(--green-700));font-size:20px"><i class="fas ${crop.icon||'fa-seedling'}" style="color:#fff"></i></div>`;
+
+  document.getElementById('sim-size').value = 2;
+  document.getElementById('sim-invest').value = 50;
+
+  document.getElementById('farm-sim').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderPlots();
+  recalcSim(false);
+}
+
+function closeFarmSim(){
+  document.getElementById('farm-sim').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* Isometric plot grid — scales with farm size */
+function renderPlots(){
+  const wrap = document.getElementById('sim-plots');
+  if(!wrap) return;
+  const acres = simState.acres;
+  const small = window.innerWidth <= 768;
+  const cell  = small ? 26 : 34;
+  const total = Math.max(6, Math.min(small?24:36, Math.round(4 + acres * 1.4)));
+  const cols  = Math.ceil(Math.sqrt(total));
+  wrap.style.gridTemplateColumns = `repeat(${cols}, ${cell}px)`;
+  const match = simState.crop?.match || 60;
+  const health = match >= 75 ? 'lush' : (match >= 55 ? '' : 'poor');
+
+  wrap.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 'sim-plot ' + health;
+    d.style.width = cell+'px'; d.style.height = cell+'px';
+    d.style.animationDelay = (i * 0.035) + 's';
+    wrap.appendChild(d);
+  }
+  /* The rotated grid is visually ~1.6x its layout box, so shrink it further on
+     narrow screens or it spills out of the scene and sits under the badge. */
+  let scale = Math.max(0.5, Math.min(1, 5.2 / cols));
+  if(small) scale *= 0.78;
+  wrap.style.transform = `translate(-50%,-50%) rotateX(58deg) rotateZ(-42deg) scale(${scale})`;
+}
+
+function countUp(el, to, formatter, ms){
+  if(!el) return;
+  const from = el._cur || 0;
+  el._cur = to;
+  if(prefersReducedMotion()){ el.textContent = formatter(to); return; }
+  const t0 = performance.now();
+  const dur = ms || 600;
+  function step(now){
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = formatter(from + (to - from) * eased);
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function coinBurst(originEl, count){
+  if(!originEl || prefersReducedMotion()) return;
+  const r = originEl.getBoundingClientRect();
+  for(let i=0;i<count;i++){
+    const c = document.createElement('div');
+    c.className = 'sim-coin';
+    c.style.width='9px'; c.style.height='9px'; c.style.borderRadius='50%';
+    c.style.background='linear-gradient(145deg,var(--lime),var(--green-600))';
+    c.style.boxShadow='0 2px 8px rgba(90,168,60,0.45)';
+    c.style.left = (r.left + r.width/2) + 'px';
+    c.style.top  = (r.top + r.height/2) + 'px';
+    c.style.setProperty('--cx', ((Math.random()-0.5)*220).toFixed(0)+'px');
+    c.style.setProperty('--cy', (-70 - Math.random()*130).toFixed(0)+'px');
+    c.style.setProperty('--cr', (Math.random()*540-270).toFixed(0)+'deg');
+    c.style.animationDelay = (i*0.045)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 1200);
+  }
+}
+
+/* ── THE MODEL ──
+   inputRatio  = what the farmer invests ÷ what the crop actually needs
+   yieldFactor = below 1.0 yield drops steeply; above 1.0 diminishing returns
+   suitability = crop match % from the soil/climate engine                */
+function recalcSim(animate){
+  if(!simState.crop) return;
+  const acres = simState.acres;
+  const econ  = simState.econ;
+
+  const recommendedCost = econ.costAcre * acres;
+  const maxInvest = recommendedCost * 1.8;
+  const invest = Math.round((simState.investPct / 100) * maxInvest);
+  const inputRatio = recommendedCost > 0 ? invest / recommendedCost : 0;
+
+  let yieldFactor;
+  if(inputRatio <= 0)        yieldFactor = 0;
+  else if(inputRatio < 0.2)  yieldFactor = inputRatio * 0.5;
+  else if(inputRatio < 1)    yieldFactor = 0.10 + 0.90 * Math.pow((inputRatio - 0.2) / 0.8, 0.75);
+  else                       yieldFactor = Math.min(1.22, 1 + 0.20 * Math.log(inputRatio));
+
+  const suitability = Math.max(0.55, Math.min(1.08, (simState.crop.match || 60) / 100 + 0.12));
+  const priceInfo = resolvePrice(simState.crop.name, econ);
+
+  const totalYield = econ.yieldQtl * acres * yieldFactor * suitability;
+  const revenue    = totalYield * priceInfo.price;
+  const cost       = invest;
+  const net        = revenue - cost;
+  const roi        = cost > 0 ? (net / cost) * 100 : 0;
+
+  document.getElementById('sim-size-val').textContent = acres.toFixed(1) + ' acre';
+  document.getElementById('sim-size-hint').textContent = '≈ ' + (acres*0.4047).toFixed(2) + ' hectare';
+  document.getElementById('sim-invest-val').textContent = fmtINR(invest);
+  const gap = invest - recommendedCost;
+  document.getElementById('sim-invest-hint').textContent =
+    Math.abs(gap) < recommendedCost*0.08 ? 'About right for this size'
+    : gap < 0 ? fmtINR(Math.abs(gap)) + ' below what this crop needs'
+              : fmtINR(gap) + ' above the usual requirement';
+
+  const scaleMax = Math.max(revenue, cost, 1);
+  setBar('fill-yield',  (yieldFactor*suitability/1.3)*100, false);
+  setBar('fill-rev',    (revenue/scaleMax)*100, false);
+  setBar('fill-cost',   (cost/scaleMax)*100, false);
+  setBar('fill-profit', (Math.abs(net)/scaleMax)*100, net < 0);
+
+  countUp(document.getElementById('sim-yield'), totalYield, v => v.toFixed(1) + ' qtl');
+  countUp(document.getElementById('sim-rev'),   revenue,    v => fmtINR(v));
+  countUp(document.getElementById('sim-cost'),  cost,       v => fmtINR(v));
+  countUp(document.getElementById('sim-net'),   net,        v => fmtINR(v));
+  countUp(document.getElementById('sim-profit'),net,        v => fmtINR(v), 750);
+  countUp(document.getElementById('sim-roi'),   roi,        v => (v>=0?'+':'') + v.toFixed(0) + '%', 750);
+
+  document.getElementById('sim-hero').classList.toggle('loss', net < 0);
+  document.getElementById('sim-profit-sub').textContent =
+    'over one season' + (simState.crop.maturity ? ' (~' + simState.crop.maturity + ' days)' : '');
+
+  document.getElementById('chip-yield').textContent = econ.yieldQtl + ' qtl';
+  document.getElementById('chip-price').textContent = '₹' + priceInfo.price.toLocaleString('en-IN') + ' (' + priceInfo.source + ')';
+  document.getElementById('chip-days').textContent  = (simState.crop.maturity || '—') + ' days';
+  document.getElementById('chip-water').textContent = capWords(econ.water || simState.crop.waterNeeds || '—');
+
+  renderVerdict(net, roi, inputRatio, suitability);
+
+  if(animate && net > 0 && !prefersReducedMotion()){
+    ['row-yield','row-rev','row-cost','row-profit'].forEach((id,i)=>{
+      const r = document.getElementById(id);
+      setTimeout(()=>{ r.classList.add('pop'); setTimeout(()=>r.classList.remove('pop'), 320); }, i*80);
+    });
+  }
+}
+
+function capWords(s){ return String(s).replace(/(^|[\s-])(\w)/g, (m,a,b)=>a+b.toUpperCase()); }
+
+function setBar(id, pct, negative){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('neg', !!negative);
+  el.style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+
+function renderVerdict(net, roi, inputRatio, suitability){
+  const icon = document.getElementById('sim-verdict-icon');
+  const text = document.getElementById('sim-verdict-text');
+  const name = simState.crop.name;
+  let emoji, msg;
+
+  if(inputRatio < 0.2){
+    emoji = '<i class="fas fa-circle-exclamation" style="color:#ef4444"></i>';
+    msg = `<strong>The crop will not establish.</strong> Below about a fifth of the normal input cost there is not enough for seed, land preparation and basic fertiliser, so ${name} would largely fail. Farming a smaller area properly beats farming a large area on nothing.`;
+  } else if(inputRatio < 0.45){
+    emoji = '<i class="fas fa-triangle-exclamation" style="color:var(--saffron)"></i>';
+    msg = `<strong>Seriously under-invested.</strong> ${name} would yield well below its potential here. Stretching the same money across fewer acres usually earns more than spreading it thin — try reducing the farm size slider and watch the profit rise.`;
+  } else if(net < 0){
+    emoji = '<i class="fas fa-arrow-trend-down" style="color:#ef4444"></i>';
+    msg = `<strong>Likely loss of ${fmtINR(Math.abs(net))}.</strong> At this farm size and price, ${name} does not cover its costs. Try increasing investment toward the recommended level, or look at a higher-ranked crop.`;
+  } else if(roi >= 90){
+    emoji = '<i class="fas fa-trophy" style="color:var(--saffron)"></i>';
+    msg = `<strong>Strong return.</strong> ${name} suits your soil and climate well, and at this input level you would roughly ${(1+roi/100).toFixed(1)}× your money back over one season. Confirm mandi prices before you commit.`;
+  } else if(roi >= 40){
+    emoji = '<i class="fas fa-wheat-awn" style="color:var(--green-400)"></i>';
+    msg = `<strong>Healthy margin.</strong> ${name} returns about ${roi.toFixed(0)}% on what you put in. Pushing investment slightly higher may raise yield, but returns flatten past the recommended cost.`;
+  } else if(roi >= 10){
+    emoji = '<i class="fas fa-seedling" style="color:var(--green-400)"></i>';
+    msg = `<strong>Modest but positive.</strong> ${name} clears its costs with roughly ${roi.toFixed(0)}% left over. Worth comparing against the other recommended crops before deciding.`;
+  } else {
+    emoji = '<i class="fas fa-scale-balanced" style="color:var(--text-mid)"></i>';
+    msg = `<strong>Thin margin.</strong> ${name} barely covers costs here. Small swings in mandi price or weather could push this into a loss.`;
+  }
+
+  if(suitability < 0.72){
+    msg += ` Note that your soil and climate match for ${name} is on the lower side, which already reduces the yield estimate above.`;
+  }
+  icon.innerHTML = emoji;
+  icon.style.animation = 'none'; void icon.offsetWidth; icon.style.animation = '';
+  text.innerHTML = msg;
+  retranslate(text);
+}
+
+/* wire simulator controls */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const size = document.getElementById('sim-size');
+  const inv  = document.getElementById('sim-invest');
+  let plotTimer;
+  if(size) size.addEventListener('input', e=>{
+    simState.acres = parseFloat(e.target.value);
+    recalcSim(false);
+    clearTimeout(plotTimer);
+    plotTimer = setTimeout(renderPlots, 140);
+  });
+  if(inv){
+    inv.addEventListener('input', e=>{
+      simState.investPct = parseInt(e.target.value);
+      recalcSim(false);
+    });
+    inv.addEventListener('change', ()=>{
+      recalcSim(true);
+      const hero = document.getElementById('sim-hero');
+      if(!document.getElementById('sim-profit').textContent.includes('-')) coinBurst(hero, 7);
+    });
+  }
+  document.getElementById('farm-sim')?.addEventListener('click', e=>{
+    if(e.target.id === 'farm-sim') closeFarmSim();
+  });
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'Escape' && document.getElementById('farm-sim')?.classList.contains('open')) closeFarmSim();
+  });
+  window.addEventListener('resize', ()=>{
+    if(document.getElementById('farm-sim')?.classList.contains('open')) renderPlots();
+  }, {passive:true});
+});
+</script>
 </body>
 </html>
