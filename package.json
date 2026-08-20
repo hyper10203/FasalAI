@@ -10,7 +10,9 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "jimp": "^1.6.1",
+    "onnxruntime-node": "^1.27.0"
   },
   "engines": {
     "node": ">=18.0.0"

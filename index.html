@@ -3800,6 +3800,19 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
                 <span class="badge-pill" id="pdx-status-badge" style="font-size:10px">READY</span>
               </div>
               <div class="card-body">
+                <!-- Target Mode Selector (Leaf Disease vs Pest vs Auto) -->
+                <div class="pdx-mode-bar" style="display:flex;gap:8px;margin-bottom:14px;background:var(--bg-2,#201710);padding:4px;border-radius:var(--radius-sm);border:1px solid var(--border)">
+                  <button type="button" class="pdx-mode-btn active" id="pdx-mode-leaf" onclick="setPdxTargetMode('leaf')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:var(--green-600);color:#fff;font-weight:600;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
+                    <i class="fas fa-leaf"></i> <span>Leaf Disease</span>
+                  </button>
+                  <button type="button" class="pdx-mode-btn" id="pdx-mode-pest" onclick="setPdxTargetMode('pest')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:transparent;color:var(--text-mid);font-weight:500;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
+                    <i class="fas fa-bug"></i> <span>Pest & Insect</span>
+                  </button>
+                  <button type="button" class="pdx-mode-btn" id="pdx-mode-both" onclick="setPdxTargetMode('both')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:transparent;color:var(--text-mid);font-weight:500;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
+                    <i class="fas fa-wand-magic-sparkles"></i> <span>Auto (Both)</span>
+                  </button>
+                </div>
+
                 <!-- Crop selector -->
                 <div class="pdx-crop-wrap" id="pdx-crop-wrap">
                   <label class="pdx-crop-label" data-i18n="which_crop">Which crop are you scanning?</label>
@@ -5437,6 +5450,8 @@ function _doLogin(account, phoneKey, p, errMsg){
   localAccounts[phoneKey]=account;
   saveAllAccounts(localAccounts);
   localStorage.setItem('userData',JSON.stringify(currentUser));
+  localStorage.setItem('fasal_onboarded', 'true');
+  localStorage.setItem('has_logged_in_before', 'true');
   launchApp();
   showToast('Welcome back, '+currentUser.name+'!');
 }
@@ -5479,8 +5494,14 @@ function _doCreateAccount(fbExisting, phoneKey, fullName, countryCode, p){
   saveAllAccounts(localAccounts);
   localStorage.setItem('userData',JSON.stringify(currentUser));
 
-  // Show onboarding carousel instead of going directly to app
-  showOnboarding();
+  // Only show onboarding if user has not completed it or logged in before
+  const seen = localStorage.getItem('fasal_onboarded') || localStorage.getItem('has_logged_in_before') || localStorage.getItem('soilscope_onboarded');
+  if(!seen){
+    showOnboarding();
+  } else {
+    launchApp();
+    showToast('Welcome, '+currentUser.name+'!');
+  }
 }
 
 /* ══════════════════════════════════════
@@ -5552,6 +5573,9 @@ function goToObSlide(idx){
 }
 
 function finishOnboarding(){
+  localStorage.setItem('fasal_onboarded', 'true');
+  localStorage.setItem('has_logged_in_before', 'true');
+  localStorage.setItem('soilscope_onboarded', 'true');
   const page=document.getElementById('onboarding-page');
   page.style.transition='opacity 0.6s ease, transform 0.6s ease';
   page.style.opacity='0';
@@ -5560,7 +5584,7 @@ function finishOnboarding(){
     page.style.display='none';
     page.style.opacity='';page.style.transform='';
     launchApp();
-    showToast('Welcome, '+currentUser.name+'!');
+    showToast('Welcome, '+(currentUser?currentUser.name:'Farmer')+'!');
   },600);
 }
 
@@ -7174,69 +7198,221 @@ function pdxResizeImage(file){
   });
 }
 
-/* ---- On-device model (transformers.js + ONNX ViT). Loads once, then runs fully in-browser. ---- */
-const PDX_MODEL_ID = 'cabrel09/crop_leaf_disease_detector';
-const PDX_TFJS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2/dist/transformers.min.js';
-let pdxPipePromise = null;
-let pdxModelLoaded = false;
-function pdxGetLocalModel(){
-  if(pdxPipePromise) return pdxPipePromise;
-  pdxPipePromise = (async () => {
-    const mod = await import(PDX_TFJS_URL);
-    mod.env.allowLocalModels = false;
-    const pipe = await mod.pipeline('image-classification', PDX_MODEL_ID, { dtype: 'fp32' });
-    pdxModelLoaded = true;
-    return pipe;
-  })();
-  return pdxPipePromise;
+/* ---- Target Mode (Leaf Disease vs Pest & Insect vs Auto) ---- */
+let pdxTargetMode = 'leaf'; // 'leaf' | 'pest' | 'both'
+function setPdxTargetMode(mode){
+  pdxTargetMode = mode;
+  document.querySelectorAll('.pdx-mode-btn').forEach(b => {
+    const isActive = b.id === 'pdx-mode-' + mode;
+    b.classList.toggle('active', isActive);
+    b.style.background = isActive ? (mode === 'pest' ? 'var(--saffron, #e0a63a)' : 'var(--green-600)') : 'transparent';
+    b.style.color = isActive ? '#fff' : 'var(--text-mid)';
+    b.style.fontWeight = isActive ? '600' : '500';
+  });
+  const phEl = document.querySelector('#pdx-placeholder div[data-i18n="drop_leaf"]');
+  if(phEl){
+    phEl.textContent = mode === 'pest' ? 'Drop an insect / pest photo here' : (mode === 'leaf' ? 'Drop a crop leaf photo here' : 'Drop a leaf or pest photo here');
+  }
+  showToast(mode === 'leaf' ? 'Mode: Leaf Disease Detection' : (mode === 'pest' ? 'Mode: Pest & Insect Identification' : 'Mode: Auto (Both Disease & Pest)'));
 }
 
-/* ---- Detection: on-device model first, then remote APIs, then colour heuristic ---- */
+/* ---- High-Accuracy Local & On-Device ONNX ViT / ConvNeXt Pipeline ---- */
+let pdxSessionPromise = null;
+let pdxClassNamesList = null;
+
+async function loadOrtWeb() {
+  if (window.ort) return;
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function pdxGetLocalONNX() {
+  if (pdxSessionPromise) return pdxSessionPromise;
+  pdxSessionPromise = (async () => {
+    await loadOrtWeb();
+    if(window.ort && window.ort.env && window.ort.env.wasm) {
+      window.ort.env.wasm.numThreads = 1;
+    }
+    
+    // Load class names
+    if (!pdxClassNamesList) {
+      try {
+        const res = await fetch('assets/models/class_names.json');
+        pdxClassNamesList = await res.json();
+      } catch(e) {
+        pdxClassNamesList = Object.keys(PDX_CLASSES);
+      }
+    }
+    
+    // Load ConvNeXt Tiny ONNX Model
+    let session;
+    try {
+      session = await ort.InferenceSession.create('assets/models/convnext_tiny_plantdisease.onnx', { executionProviders: ['wasm'] });
+    } catch(e) {
+      session = await ort.InferenceSession.create('/assets/models/convnext_tiny_plantdisease.onnx', { executionProviders: ['wasm'] });
+    }
+    return session;
+  })();
+  return pdxSessionPromise;
+}
+
+function pdxPreprocessCanvas(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 224; canvas.height = 224;
+      const ctx = canvas.getContext('2d');
+      
+      // PyTorch ImageNet transform: Resize(256) maintaining aspect ratio + CenterCrop(224)
+      const minDim = Math.min(img.width, img.height);
+      const scale = 256 / minDim;
+      const srcW = 224 / scale;
+      const srcH = 224 / scale;
+      const sx = (img.width - srcW) / 2;
+      const sy = (img.height - srcH) / 2;
+      
+      ctx.drawImage(img, sx, sy, srcW, srcH, 0, 0, 224, 224);
+      resolve(canvas);
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function pdxRunLocalONNX(dataUrl) {
+  const session = await pdxGetLocalONNX();
+  const canvas = await pdxPreprocessCanvas(dataUrl);
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, 224, 224).data;
+  
+  const float32Data = new Float32Array(3 * 224 * 224);
+  const mean = [0.485, 0.456, 0.406];
+  const std = [0.229, 0.224, 0.225];
+  
+  for (let i = 0; i < 224 * 224; i++) {
+    const r = imgData[i * 4] / 255.0;
+    const g = imgData[i * 4 + 1] / 255.0;
+    const b = imgData[i * 4 + 2] / 255.0;
+    float32Data[i] = (r - mean[0]) / std[0];
+    float32Data[i + 224 * 224] = (g - mean[1]) / std[1];
+    float32Data[i + 2 * 224 * 224] = (b - mean[2]) / std[2];
+  }
+  
+  const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, 224, 224]);
+  const results = await session.run({ [session.inputNames[0]]: inputTensor });
+  const logits = results[session.outputNames[0]].data;
+  
+  // Softmax
+  let maxLogit = -Infinity;
+  for (let i = 0; i < logits.length; i++) {
+    if (logits[i] > maxLogit) maxLogit = logits[i];
+  }
+  let sumExp = 0;
+  const exps = new Float32Array(logits.length);
+  for (let i = 0; i < logits.length; i++) {
+    exps[i] = Math.exp(logits[i] - maxLogit);
+    sumExp += exps[i];
+  }
+  const probs = new Float32Array(logits.length);
+  for (let i = 0; i < logits.length; i++) {
+    probs[i] = exps[i] / sumExp;
+  }
+  
+  const classList = pdxClassNamesList || Object.keys(PDX_CLASSES);
+  const PEST_KEYWORDS = ['aphid', 'worm', 'weevil', 'midge', 'mealybug', 'mite', 'moth', 'hispa', 'dead_heart', 'bug', 'fly', 'borer', 'thrip', 'hopper'];
+  
+  let scored = classList.map((name, i) => {
+    const nameLower = name.toLowerCase();
+    const isPest = PEST_KEYWORDS.some(k => nameLower.includes(k));
+    const isHealthy = nameLower.includes('healthy') || nameLower.includes('normal');
+    return {
+      label: name,
+      score: probs[i] || 0,
+      isPest,
+      isHealthy
+    };
+  });
+  
+  // Mode-based filtering
+  if (pdxTargetMode === 'leaf') {
+    scored = scored.filter(s => !s.isPest || s.score > 0.6);
+  } else if (pdxTargetMode === 'pest') {
+    scored = scored.filter(s => s.isPest || s.score > 0.6);
+  }
+  
+  // Crop filtering
+  if (pdxSelectedCrop) {
+    const c = pdxSelectedCrop.toLowerCase().replace(/[^a-z]/g, '');
+    const cropMatches = scored.filter(s => s.label.toLowerCase().replace(/[^a-z]/g, '').includes(c));
+    if (cropMatches.length > 0) scored = cropMatches;
+  }
+  
+  scored.sort((a, b) => b.score - a.score);
+  return { topK: scored.slice(0, 6).map(s => ({ label: s.label, score: s.score })), source: 'ai-local' };
+}
+
+/* ---- Multi-Tier AI Detection Pipeline ---- */
 async function pdxDetect(dataUrl, onStage){
-  /* ── TIER 1 · PlantPulse on-device model ──────────────────────────
-     Runs locally, needs no network and no key. */
-  try{
-    if(!pdxModelLoaded && onStage) onStage('Loading PlantPulse model (first run)…');
-    const pipe = await pdxGetLocalModel();
-    if(onStage) onStage('Classifying with on-device AI…');
-    const out = await pipe(dataUrl, { topk: 6 });
-    let topK = (out||[]).map(o=>({label:o.label, score:o.score||0}));
-
-    // "Invalid" = not a recognisable crop leaf; say so instead of guessing
-    if(topK.length && topK[0].label==='Invalid' && topK[0].score>0.45){
-      return {topK:[{label:'Invalid',score:topK[0].score}], source:'invalid'};
+  // ── TIER 1 · Backend ConvNeXt Tiny ONNX API ──
+  try {
+    if(onStage) onStage(pdxTargetMode === 'pest' ? 'Scanning with Pest AI…' : 'Classifying leaf disease with ConvNeXt AI…');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    const res = await fetch('/api/pdx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl, mode: pdxTargetMode, crop: pdxSelectedCrop }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if(res.ok){
+      const data = await res.json();
+      if(data && data.topK && data.topK.length > 0){
+        return { topK: data.topK, source: 'ai-local' };
+      }
     }
-    topK = topK.filter(t=>t.label!=='Invalid');
+  } catch(e) {
+    console.warn('Backend PDX endpoint unavailable, switching to on-device runtime:', e.message);
+  }
 
-    // Treat a weak or off-crop result as a miss and fall through
-    const best = topK[0];
-    let weak = !best || best.score < 0.45;
-    if(!weak && pdxSelectedCrop){
-      const c = pdxSelectedCrop.toLowerCase().replace(/[^a-z]/g,'');
-      weak = !topK.some(t=>t.label.toLowerCase().replace(/[^a-z]/g,'').includes(c));
+  // ── TIER 2 · On-Device ONNX Web Runtime (In-browser ConvNeXt) ──
+  try {
+    if(onStage) onStage('Running on-device neural network…');
+    const localRes = await pdxRunLocalONNX(dataUrl);
+    if(localRes && localRes.topK && localRes.topK.length > 0){
+      return localRes;
     }
-    if(!weak && topK.length) return {topK, source:'ai-local'};
-    if(onStage) onStage('Cross-checking with Pest Patrol…');
-  }catch(e){ console.warn('Tier 1 (PlantPulse on-device) failed:', e && e.message); }
+  } catch(e) {
+    console.warn('On-device ONNX runtime fallback:', e && e.message);
+  }
 
-  /* ── TIER 2 · SoilScope Pest Patrol ───────────────────────────────
-     Roboflow crop models, then the original canvas colour + climate
-     reasoning that Pest Patrol shipped with. */
-  try{
-    if(onStage) onStage('Running Pest Patrol detection…');
-    const pp = await pdxDetectPestPatrol(dataUrl, onStage);
-    if(pp) return pp;
-  }catch(e){ console.warn('Tier 2 (Pest Patrol) failed:', e && e.message); }
+  // ── TIER 3 · Roboflow Pest Detection (For Pest Mode or Fallback) ──
+  if (pdxTargetMode === 'pest' || pdxTargetMode === 'both') {
+    try {
+      if(onStage) onStage('Cross-checking with Pest Patrol…');
+      const pp = await pdxDetectPestPatrol(dataUrl, onStage);
+      if(pp) return pp;
+    } catch(e) {
+      console.warn('Pest Patrol workflow failed:', e && e.message);
+    }
+  }
 
-  /* ── TIER 3 · Hugging Face inference API ──────────────────────────*/
-  try{
-    if(onStage) onStage('Checking Hugging Face models…');
+  // ── TIER 4 · Hugging Face Inference API ──
+  try {
+    if(onStage) onStage('Checking Hugging Face knowledge base…');
     const hf = await pdxDetectHF(dataUrl, onStage);
     if(hf) return hf;
-  }catch(e){ console.warn('Tier 3 (Hugging Face) failed:', e && e.message); }
+  } catch(e) {
+    console.warn('Hugging Face inference failed:', e && e.message);
+  }
 
-  /* Nothing reachable — be honest rather than invent a disease */
-  if(onStage) onStage('Analysing image colour patterns…');
+  // ── TIER 5 · Smart Color & Climate Heuristic ──
+  if(onStage) onStage('Analysing image color patterns…');
   return pdxDetectHeuristic(dataUrl);
 }
 
