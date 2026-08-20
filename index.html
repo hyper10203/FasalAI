@@ -7012,98 +7012,11 @@ function loadSavedLogo(){ /* Logo loaded via img src in HTML */ }
    LIVE MARKET DATA — Agmarknet / data.gov.in
 ══════════════════════════════════════ */
 /* ─────────────────────────────────────
-   LIVE MARKET PRICES
-   Uses data.gov.in Agmarknet API (registration-based key below).
-   Replace AGMARK_API_KEY with your free key from data.gov.in
-   If key is missing, a realistic seasonally-adjusted model is used.
+/* ─────────────────────────────────────
+   LIVE MARKET PRICES (AGMARKNET)
+   Connected to /api/market backend pipeline
    ───────────────────────────────────── */
-const AGMARK_API_KEY = 'YOUR_DATAGOV_KEY_HERE'; // <── REPLACE with key from data.gov.in (free)
-const AGMARK_RESOURCE = '9ef84268-d588-465a-a308-a864a43d0070';
-
-// Realistic base wholesale prices (Rs/kg) — 2025-26 Agmarknet averages with seasonal adjustment
-const MARKET_BASE_PRICES = {
-  'Tomatoes':  { base: 35, seasonIdx: [0.7,0.7,0.8,1.1,1.5,2.2,2.8,2.1,1.4,1.0,0.8,0.7] },
-  'Potatoes':  { base: 24, seasonIdx: [1.2,1.1,1.0,0.9,0.8,0.7,0.7,0.8,0.9,1.1,1.2,1.3] },
-  'Onions':    { base: 32, seasonIdx: [1.1,1.0,0.9,0.8,0.7,0.7,0.8,1.0,1.2,1.3,1.2,1.1] },
-  'Carrots':   { base: 42, seasonIdx: [0.9,0.9,1.0,1.0,0.8,0.7,0.7,0.8,1.0,1.1,1.1,1.0] },
-  'Bell Peppers': { base: 65, seasonIdx: [0.9,0.8,0.9,1.0,1.3,1.7,2.0,1.6,1.2,1.0,0.9,0.9] },
-  'Cabbage':   { base: 22, seasonIdx: [1.1,1.0,0.9,0.8,0.7,0.7,0.8,0.9,1.0,1.1,1.2,1.2] },
-  'Cauliflower':{ base: 38, seasonIdx: [1.2,1.1,1.0,0.8,0.7,0.7,0.8,0.9,1.0,1.1,1.3,1.3] },
-  'Spinach':   { base: 48, seasonIdx: [1.2,1.1,1.0,0.9,0.8,0.7,0.7,0.8,0.9,1.0,1.1,1.2] },
-};
-
-function deterministicHash(str){
-  let hash=0;
-  for(let i=0;i<str.length;i++){hash=((hash<<5)-hash)+str.charCodeAt(i);hash|=0;}
-  return hash;
-}
-function getSeasonalPrice(vegName){
-  const now = new Date();
-  const month = now.getMonth();
-  const entry = MARKET_BASE_PRICES[vegName];
-  if(!entry) return null;
-  // Deterministic daily noise based on date + vegName (no more random on refresh)
-  const dayKey = vegName + '-' + now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate();
-  const hash = deterministicHash(dayKey);
-  const noise = ((hash % 1000) / 1000 - 0.5) * entry.base * 0.12; // ±6% but stable per day
-  return Math.max(5, Math.round((entry.base * entry.seasonIdx[month] + noise) * 10) / 10);
-}
-
-async function fetchLiveMarketPrice(vegName){
-  if(!AGMARK_API_KEY || AGMARK_API_KEY === 'YOUR_DATAGOV_KEY_HERE') return null;
-  const commodityMap = {
-    'Tomatoes':'Tomato','Potatoes':'Potato','Onions':'Onion','Carrots':'Carrot',
-    'Bell Peppers':'Capsicum','Cabbage':'Cabbage','Cauliflower':'Cauliflower','Spinach':'Spinach'
-  };
-  const commodity = commodityMap[vegName] || vegName;
-  try{
-    const url = `https://api.data.gov.in/resource/${AGMARK_RESOURCE}?api-key=${AGMARK_API_KEY}&format=json&filters%5Bcommodity%5D=${encodeURIComponent(commodity)}&filters%5Bstate%5D=Punjab&limit=5`;
-    const res = await fetch(url, {signal: AbortSignal.timeout(6000)});
-    if(!res.ok) throw new Error('Agmarknet HTTP ' + res.status);
-    const data = await res.json();
-    const records = data.records || [];
-    if(records.length){
-      const prices = records.map(r=>parseFloat(r.modal_price||r.min_price||0)).filter(p=>p>0);
-      if(prices.length){ const avg = prices.reduce((a,b)=>a+b,0)/prices.length; return Math.round(avg/100*10)/10; }
-    }
-  }catch(e){ console.warn('Agmarknet fetch failed:', e.message); }
-  return null;
-}
-
-async function refreshLiveMarketPrices(){
-  showToast('Updating market prices…');
-  document.getElementById('market-live-status').textContent='Updating…';
-  let liveCount=0;
-  for(const v of marketAPI.vegetables){
-    const livePrice = await fetchLiveMarketPrice(v.name);
-    if(livePrice !== null && livePrice > 0){
-      const prev = v.currentPrice;
-      v.currentPrice = livePrice;
-      v.change = Math.round((livePrice-prev)/prev*100*10)/10;
-      v.isLive = true;
-      liveCount++;
-    } else {
-      // Use seasonally-adjusted price as realistic fallback
-      const seasonal = getSeasonalPrice(v.name);
-      if(seasonal){
-        const prev = v.currentPrice;
-        v.currentPrice = seasonal;
-        v.change = Math.round((seasonal-prev)/prev*100*10)/10;
-        v.isLive = false; // mark as estimated
-      }
-    }
-  }
-  const statusEl = document.getElementById('market-live-status');
-  if(liveCount > 0){
-    statusEl.textContent = liveCount + ' live (Agmarknet)';
-    showToast(liveCount + ' live Agmarknet prices loaded');
-  } else {
-    statusEl.textContent = 'Seasonal model (configure API key for live data)';
-    showToast('Using seasonal price model — add Agmarknet key for live prices');
-  }
-  updatePriceCards();
-  if(selectedVegetable) updatePriceTrendChart();
-}
+// Handled by unified fetchLiveMarketPrices()
 
 /* ══════════════════════════════════════
    REAL PEST / DISEASE DETECTION via HF
