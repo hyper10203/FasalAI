@@ -3980,8 +3980,9 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
                 <thead>
                   <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
                     <th style="padding:10px 14px;text-align:left;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Crop</th>
-                    <th style="padding:10px 14px;text-align:right;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">MSP (Rs./Qtl)</th>
-                    <th style="padding:10px 14px;text-align:right;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">MSP (Rs./Kg)</th>
+                    <th style="padding:10px 14px;text-align:right;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Govt MSP (₹/Qtl)</th>
+                    <th style="padding:10px 14px;text-align:right;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">MSP (₹/Kg)</th>
+                    <th style="padding:10px 14px;text-align:right;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Live Mandi (₹/Kg)</th>
                     <th style="padding:10px 14px;text-align:center;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Season</th>
                     <th style="padding:10px 14px;text-align:center;color:var(--text-light);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">Market vs MSP</th>
                   </tr>
@@ -5218,7 +5219,7 @@ class MarketDataAPI {
     const months={1:1,3:3,'1M':1,'3M':3,'6M':6,'1Y':12}[tf]||1;
     const pts=months*4;
     const v=this.vegetables.find(x=>x.name===veg);
-    const base=v?v.currentPrice:30;
+    const base=v?v.currentPrice:25;
     const seasons={
       'Tomatoes':[0.85,0.82,0.88,0.95,1.15,1.45,1.75,1.40,1.15,0.98,0.90,0.85],
       'Potatoes':[1.10,1.05,0.95,0.88,0.80,0.75,0.82,0.90,0.98,1.08,1.15,1.18],
@@ -5231,21 +5232,20 @@ class MarketDataAPI {
     };
     const sf=seasons[veg]||Array(12).fill(1);
     const history=[];
-    const now=new Date();
+    const fixedAnchorDate=new Date('2026-08-20T00:00:00Z');
     
-    // Deterministic hash seed for completely stable graphing on every refresh
+    // Deterministic hash seed
     let seed=0;
     for(let c=0;c<veg.length;c++) seed=((seed<<5)-seed)+veg.charCodeAt(c);
 
     for(let i=pts;i>=0;i--){
-      const d=new Date(now);
+      const d=new Date(fixedAnchorDate);
       d.setDate(d.getDate()-i*7);
-      const weekNum=Math.floor(d.getTime()/(7*24*3600*1000));
-      const wave=Math.sin((weekNum+seed%13)*0.42)*2.8+Math.cos((weekNum*0.23))*1.5;
+      const wave=Math.sin((i+Math.abs(seed)%7)*0.45)*1.8;
       const seasonalFactor=sf[d.getMonth()]||1.0;
-      const currentMonthFactor=sf[now.getMonth()]||1.0;
-      const normalizedSeasonal=seasonalFactor/currentMonthFactor;
-      const historicalPrice=i===0?base:Math.max(8,Math.round((base*normalizedSeasonal+(wave*(i/pts)))*10)/10);
+      const anchorMonthFactor=sf[fixedAnchorDate.getMonth()]||1.0;
+      const normalizedSeasonal=seasonalFactor/anchorMonthFactor;
+      const historicalPrice=i===0?base:Math.max(6,Math.round((base*normalizedSeasonal+(wave*(i/pts)))*10)/10);
       history.push({date:d.toISOString().split('T')[0],price:historicalPrice});
     }
     return history;
@@ -5295,9 +5295,26 @@ function renderMSPTable(){
   const tbody=document.getElementById('msp-tbody');
   if(!tbody) return;
   
+  const mspRates = marketAPI.mspPrices || {
+    'Paddy (Common)': 26.9,
+    'Paddy (Grade A)': 27.5,
+    'Maize': 23.8,
+    'Soybean': 62.2,
+    'Cotton (Medium)': 78.5,
+    'Groundnut': 71.0,
+    'Sunflower': 74.0,
+    'Sugarcane (FRP)': 3.8,
+    'Wheat': 26.3,
+    'Barley': 19.5,
+    'Chickpea (Gram)': 66.3,
+    'Lentil (Masur)': 72.5,
+    'Mustard': 74.2,
+    'Safflower': 61.0
+  };
+
   const getMarketPricePerKg=(cropName)=>{
-    if(marketAPI.mspPrices && typeof marketAPI.mspPrices[cropName]==='number'){
-      return marketAPI.mspPrices[cropName];
+    if(mspRates && typeof mspRates[cropName]==='number'){
+      return mspRates[cropName];
     }
     const nameMap={
       'paddy (common)':'Paddy (Common)','paddy (grade a)':'Paddy (Grade A)','paddy':'Paddy (Common)','rice':'Paddy (Common)',
@@ -5308,7 +5325,7 @@ function renderMSPTable(){
     const cLower = cropName.toLowerCase();
     for(const [searchKey, mappedKey] of Object.entries(nameMap)){
       if(cLower.includes(searchKey)){
-        if(marketAPI.mspPrices && marketAPI.mspPrices[mappedKey]) return marketAPI.mspPrices[mappedKey];
+        if(mspRates && mspRates[mappedKey]) return mspRates[mappedKey];
       }
     }
     return 26.0;
@@ -5317,14 +5334,11 @@ function renderMSPTable(){
   tbody.innerHTML=MSP_DATA.map(item=>{
     const mspKg=(item.mspQtl/100).toFixed(2);
     const market=getMarketPricePerKg(item.crop);
-    let compHtml='<span style="color:var(--text-light);font-size:11px">—</span>';
-    if(market){
-      const diff=((market-parseFloat(mspKg))/parseFloat(mspKg)*100).toFixed(1);
-      const above=market>=parseFloat(mspKg);
-      compHtml=`<span style="font-size:12px;font-weight:700;color:${above?'var(--green-600)':'#dc3c3c'}">${above?'+':''}${diff}% <i class="fas fa-${above?'arrow-up':'arrow-down'}" style="font-size:10px"></i></span>`;
-    }
+    const diff=((market-parseFloat(mspKg))/parseFloat(mspKg)*100).toFixed(1);
+    const above=market>=parseFloat(mspKg);
     const seasonColor=item.season==='Kharif'?'rgba(87,179,154,0.12)':item.season==='Rabi'?'rgba(224,166,58,0.1)':'rgba(90,168,60,0.1)';
     const seasonTextColor=item.season==='Kharif'?'var(--sky)':item.season==='Rabi'?'var(--saffron)':'var(--green-600)';
+
     return `<tr style="border-bottom:1px solid var(--border);transition:background 0.15s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
       <td style="padding:10px 14px">
         <div style="display:flex;align-items:center;gap:8px">
@@ -5334,8 +5348,14 @@ function renderMSPTable(){
       </td>
       <td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--saffron);font-family:'Space Grotesk',serif;font-size:15px">&#8377;${item.mspQtl.toLocaleString()}</td>
       <td style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-dark);font-size:13px">&#8377;${mspKg}</td>
+      <td style="padding:10px 14px;text-align:right;font-weight:700;color:var(--green-600);font-size:14px">&#8377;${market.toFixed(1)}</td>
       <td style="padding:10px 14px;text-align:center"><span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${seasonColor};color:${seasonTextColor}">${item.season}</span></td>
-      <td style="padding:10px 14px;text-align:center">${compHtml}</td>
+      <td style="padding:10px 14px;text-align:center">
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;background:${above?'rgba(90,168,60,0.14)':'rgba(220,60,60,0.14)'};color:${above?'var(--green-600)':'#dc3c3c'};border:1px solid ${above?'rgba(90,168,60,0.25)':'rgba(220,60,60,0.25)'}">
+          <i class="fas fa-arrow-${above?'up':'down'}" style="font-size:10px"></i>
+          ${above?'+':''}${diff}% ${above?'Above MSP':'Below MSP'}
+        </span>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -5684,7 +5704,9 @@ function launchApp(){
   const pwIcon=document.querySelector('#toggle-account-password i');
   if(pwIcon) pwIcon.className='fas fa-eye';
   initMap();
-  setTimeout(initCharts,800);
+  renderMSPTable();
+  updatePriceCards();
+  setTimeout(initCharts,400);
   window._marketFetched=false;
   _lastPage='dashboard';
   const ms=document.getElementById('market-live-status'); if(ms) ms.textContent='Mandi Source: AGMARKNET Live';
@@ -6759,12 +6781,20 @@ function initCharts(){
 
   priceTrendChart=new Chart(document.getElementById('priceTrendChart'),{
     type:'line',
-    data:{labels:[],datasets:[{label:'Price (₹/kg)',data:[],borderColor:'#e0a63a',backgroundColor:'rgba(224,166,58,0.08)',tension:0.4,fill:true,pointRadius:3}]},
+    data:{labels:[],datasets:[{label:'Price (₹/kg)',data:[],borderColor:'#e0a63a',backgroundColor:'rgba(224,166,58,0.08)',tension:0.25,fill:true,pointRadius:4,pointHoverRadius:6}]},
     options:{
       responsive:true,
       maintainAspectRatio:false,
+      animation:false,
       layout:{padding:{top:10,bottom:16,left:10,right:10}},
-      plugins:{legend:{display:false}}
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{
+          ticks:{
+            callback: function(val){ return '₹'+val; }
+          }
+        }
+      }
     }
   });
 
@@ -7957,11 +7987,11 @@ function updatePriceTrendChart(){
   const hist=marketAPI.getPriceHistory(selectedVegetable,currentTimeframe);
   priceTrendChart.data.labels=hist.map(h=>{
     const d=new Date(h.date);
-    return currentTimeframe==='1M'?`Wk${Math.ceil(d.getDate()/7)}`:d.toLocaleDateString('en-IN',{month:'short',day:'numeric'});
+    return currentTimeframe==='1M'?`Wk ${Math.ceil(d.getDate()/7)}`:d.toLocaleDateString('en-IN',{month:'short',day:'numeric'});
   });
   priceTrendChart.data.datasets[0].data=hist.map(h=>h.price);
   priceTrendChart.data.datasets[0].label=`${selectedVegetable} (₹/kg)`;
-  priceTrendChart.update();
+  priceTrendChart.update('none');
 }
 function updateMarketShareChart(){
   if(!marketShareChart) return;
