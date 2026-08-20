@@ -711,7 +711,17 @@ main{padding:28px 28px 48px}
 .water .metric-value{color:var(--sky)}
 .air .metric-value{color:var(--green-600)}
 
-.chart-wrap{height:280px;margin-top:16px;position:relative}
+.chart-wrap{
+  height:320px;
+  min-height:290px;
+  margin-top:16px;
+  position:relative;
+  padding-bottom:16px;
+}
+@media(max-width:768px){
+  .card-body{padding:18px 16px 28px 16px}
+  .chart-wrap{height:330px;min-height:300px;padding-bottom:24px}
+}
 
 /* ── STATUS CHIP ── */
 .status-chip{
@@ -2578,9 +2588,9 @@ body{background-attachment:fixed}
 .page-header h1 .badge-pill{color:var(--lime) !important}
 [data-theme="light"] .page-header h1{color:var(--text-dark) !important}
 .fasal3d-emblem{position:absolute;right:0;top:-14px;width:130px;height:130px;cursor:grab;touch-action:none}
-@media(max-width:760px){
-  .page-header{padding-right:0}
-  .fasal3d-emblem{position:relative;right:auto;top:auto;width:110px;height:110px;margin:6px auto 0}
+@media(max-width:768px){
+  .page-header{padding-right:0 !important}
+  .fasal3d-emblem{display:none !important;width:0 !important;height:0 !important;visibility:hidden !important;pointer-events:none !important}
 }
 
 /* Tilt-interactive cards (3D perspective) */
@@ -6032,19 +6042,21 @@ function initFasal3D(){
     mount3D(bg,{kind:'field',count: window.innerWidth<700?9:18});
   }
   // Emblems in page headers (one per page, interactive drag-to-spin).
-  // Only mount for visible headers — a hidden page gives the canvas 0x0 and renders nothing.
-  document.querySelectorAll('.page .page-header').forEach(hd=>{
-    let holder = hd.querySelector('.fasal3d-emblem');
-    if(!holder){
-      holder=document.createElement('div');
-      holder.className='fasal3d-emblem';
-      hd.appendChild(holder);
-    }
-    if(holder.dataset.mounted) return;
-    if(!hd.offsetParent) return;                 // page not visible yet
-    holder.dataset.mounted='1';
-    setTimeout(()=>mount3D(holder,{kind:'sprout',camZ:5.2,camY:1.1,lookY:0.75}),50);
-  });
+  // Only mount for desktop screens — hidden on mobile devices.
+  if(window.innerWidth > 768){
+    document.querySelectorAll('.page .page-header').forEach(hd=>{
+      let holder = hd.querySelector('.fasal3d-emblem');
+      if(!holder){
+        holder=document.createElement('div');
+        holder.className='fasal3d-emblem';
+        hd.appendChild(holder);
+      }
+      if(holder.dataset.mounted) return;
+      if(!hd.offsetParent) return;                 // page not visible yet
+      holder.dataset.mounted='1';
+      setTimeout(()=>mount3D(holder,{kind:'sprout',camZ:5.2,camY:1.1,lookY:0.75}),50);
+    });
+  }
   window.addEventListener('resize',()=>{
     if(bg){ bg.width=window.innerWidth; bg.height=window.innerHeight; }
     FASAL3D.scenes.forEach(s=>{ try{ s.resize&&s.resize(); }catch(e){} });
@@ -6646,40 +6658,95 @@ function initCharts(){
     type:'pie',
     data:{labels:['Organic Matter','Minerals','Water','Air'],
           datasets:[{data:[4.2,45,38,12.8],backgroundColor:['#a9784a','#c49a6c','#57b39a','#5aa83c'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{
+        padding:{top:8,bottom:24,left:10,right:10}
+      },
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{
+            padding:18,
+            boxWidth:14,
+            font:{size:12,family:"'Inter',sans-serif"}
+          }
+        }
+      }
+    }
   });
 
   waterBarChart=new Chart(document.getElementById('waterBarChart'),{
     type:'bar',
     data:{labels:['pH','TDS (×10)','Nitrates (×100)','Hardness (×0.1)'],
           datasets:[{label:'Water Quality',data:[7.1,35,50,12],backgroundColor:'#57b39a',borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:10,bottom:16,left:10,right:10}},
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true}}
+    }
   });
 
   windChart=new Chart(document.getElementById('windChart'),{
     type:'radar',
     data:{labels:['Temperature','Humidity','CO₂','AQI','Wind Speed','Pressure'],
           datasets:[{label:'Air Quality',data:[24,65,415,15,3.5,1013],backgroundColor:'rgba(90,168,60,0.15)',borderColor:'#5aa83c',pointBackgroundColor:'#5aa83c',pointRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{ticks:{backdropColor:'transparent'}}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:10,bottom:16,left:10,right:10}},
+      plugins:{legend:{display:false}},
+      scales:{r:{ticks:{backdropColor:'transparent'}}}
+    }
   });
 
   satelliteChart=new Chart(document.getElementById('satelliteChart'),{
     type:'line',
     data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
           datasets:[{label:'NDVI Index',data:[0.65,0.68,0.72,0.75,0.78,0.80,0.82,0.80,0.77,0.73,0.69,0.66],borderColor:'#3c7d2c',backgroundColor:'rgba(60,125,44,0.1)',tension:0.4,fill:true,pointRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:1}},plugins:{legend:{display:false}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:10,bottom:16,left:10,right:10}},
+      scales:{y:{min:0,max:1}},
+      plugins:{legend:{display:false}}
+    }
   });
 
   priceTrendChart=new Chart(document.getElementById('priceTrendChart'),{
     type:'line',
     data:{labels:[],datasets:[{label:'Price (₹/kg)',data:[],borderColor:'#e0a63a',backgroundColor:'rgba(224,166,58,0.08)',tension:0.4,fill:true,pointRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:10,bottom:16,left:10,right:10}},
+      plugins:{legend:{display:false}}
+    }
   });
 
   marketShareChart=new Chart(document.getElementById('marketShareChart'),{
     type:'doughnut',
     data:{labels:[],datasets:[{data:[],backgroundColor:['#3c7d2c','#5aa83c','#57b39a','#a9784a','#c49a6c','#e0a63a','#7cc655'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{
+        padding:{top:8,bottom:24,left:10,right:10}
+      },
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{
+            padding:18,
+            boxWidth:14,
+            font:{size:12,family:"'Inter',sans-serif"}
+          }
+        }
+      }
+    }
   });
 
   updatePriceCards();updatePriceTrendChart();updateMarketShareChart();
