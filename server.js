@@ -207,30 +207,19 @@ app.post('/api/pdx', async (req, res) => {
       imageBuffer = Buffer.from(JSON.stringify(req.body));
     }
 
-    // PEST & INSECT MODE
+    // PEST & INSECT MODE: High-accuracy ConvNeXt ONNX + Hugging Face Pest Classifier
     if (mode === 'pest') {
-      if (process.env.ROBOFLOW_API_KEY) {
+      if (onnxSession && Jimp && classNames.length > 0) {
         try {
-          const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${process.env.ROBOFLOW_API_KEY}`;
-          const rfResponse = await fetch(roboflowUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: imageBuffer.toString('base64')
-          });
-
-          if (rfResponse.ok) {
-            const rfData = await rfResponse.json();
-            const preds = (rfData.predictions || []).slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-            if (preds.length && preds[0].class) {
-              return res.status(200).json({
-                topK: preds.map(p => ({ label: p.class, score: p.confidence || 0 })),
-                source: 'pest-patrol',
-                model: 'Roboflow Pest Detection'
-              });
-            }
+          const onnxRes = await runOnnxInference(imageBuffer, 'pest', crop);
+          if (onnxRes && onnxRes.length && onnxRes[0].score > 0.4) {
+            return res.status(200).json({
+              topK: onnxRes,
+              source: 'ai-local'
+            });
           }
-        } catch (rfErr) {
-          console.warn('Roboflow pest inference failed, falling back to Hugging Face:', rfErr.message);
+        } catch(onnxErr) {
+          console.warn('Backend ONNX pest execution error:', onnxErr.message);
         }
       }
 
@@ -254,24 +243,12 @@ app.post('/api/pdx', async (req, res) => {
             if (Array.isArray(data) && data.length && data[0].label) {
               return res.status(200).json({
                 topK: data.map(d => ({ label: d.label, score: d.score || 0 })),
-                source: 'ai-hf',
-                model: 'Hugging Face Pest Vision API'
+                source: 'ai-hf'
               });
             }
           }
         } catch (hfErr) {
           console.warn('HF pest inference failed:', hfErr.message);
-        }
-      }
-
-      if (onnxSession && Jimp && classNames.length > 0) {
-        const onnxRes = await runOnnxInference(imageBuffer, 'pest', crop);
-        if (onnxRes && onnxRes.length) {
-          return res.status(200).json({
-            topK: onnxRes,
-            source: 'ai-local',
-            model: 'ConvNeXt Pest Classifier'
-          });
         }
       }
 
