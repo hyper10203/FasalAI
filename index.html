@@ -3536,9 +3536,9 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
         <span class="badge-pill sky" style="font-size:10px"><i class="fas fa-satellite" style="font-size:9px"></i> LIVE DATA</span>
       </div>
       <div class="topbar-right">
-        <div class="user-chip">
+        <div class="user-chip" id="topbar-user-chip" onclick="navigateToPage('account')" title="Account Profile" style="cursor:pointer;padding:2px;border-radius:50%">
           <div class="user-avatar" id="user-avatar">U</div>
-          <span class="user-name" id="user-name">User</span>
+          <span class="user-name" id="user-name" style="display:none">User</span>
         </div>
         <button class="icon-btn" id="theme-btn" title="Toggle theme"><i class="fas fa-moon"></i></button>
         <button class="logout-icon-btn" id="header-logout-btn" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
@@ -5617,6 +5617,8 @@ function launchApp(){
   document.getElementById('app').style.display='block';
   document.getElementById('user-avatar').textContent=currentUser.initial||'U';
   document.getElementById('user-name').textContent=currentUser.name||'User';
+  const topChip = document.getElementById('topbar-user-chip');
+  if(topChip) topChip.title = currentUser.name || 'Account';
   document.getElementById('account-avatar').textContent=currentUser.initial||'U';
   document.getElementById('account-name').textContent=currentUser.name||'User';
   document.getElementById('account-username').textContent=currentUser.username||'—';
