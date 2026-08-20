@@ -1,6 +1,6 @@
-# 🌱 SoilScope — Agricultural Intelligence Platform
+# 🌾 FasalAI — Agricultural Intelligence Platform
 
-**SoilScope** is a comprehensive full-stack agricultural intelligence platform designed to empower farmers with hyper-local telemetry, multi-tier AI disease & pest diagnosis, real-time satellite data, MSP market price tracking, and multilingual voice assistance.
+**FasalAI** is a comprehensive full-stack agricultural intelligence platform designed to empower farmers with hyper-local telemetry, multi-tier AI disease & pest diagnosis, real-time satellite data, MSP market price tracking, and multilingual voice assistance.
 
 ---
 
@@ -31,7 +31,7 @@
 ## 📁 Directory Structure
 
 ```
-SoilScope/
+FasalAI/
 ├── assets/
 │   └── models/
 │       ├── class_names.json                # Plant disease diagnostic labels
@@ -59,7 +59,7 @@ SoilScope/
 1. Go to [railway.com](https://railway.com) and create a **New Project**.
 2. Select **Deploy from GitHub repo** and choose `hyper10203/FasalAI`.
 3. Add any optional Environment Variables (e.g. `GROQ_API_KEY`, `ROBOFLOW_API_KEY`, `HF_TOKEN`).
-4. Click **Deploy**. Railway will automatically detect `package.json` / `Procfile`, build the application, and assign a live production domain (e.g. `https://soilscope-production.up.railway.app`).
+4. Click **Deploy**. Railway will automatically detect `package.json` / `Procfile`, build the application, and assign a live production domain.
 
 ### Local Development
 ```bash

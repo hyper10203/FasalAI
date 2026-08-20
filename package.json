@@ -1,7 +1,7 @@
 {
-  "name": "soilscope",
+  "name": "fasalai",
   "version": "1.0.0",
-  "description": "SoilScope - Agricultural Intelligence Platform",
+  "description": "FasalAI - Agricultural Intelligence Platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

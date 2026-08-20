@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname), {
 
 // Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'SoilScope Backend', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'FasalAI Backend', timestamp: new Date().toISOString() });
 });
 
 // ── 1. CHAT API (Groq LLaMA 3.1) ──
@@ -132,6 +132,6 @@ app.get('*', (req, res) => {
 
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🌿 SoilScope server running on port ${PORT}`);
+  console.log(`🌾 FasalAI server running on port ${PORT}`);
   console.log(`📍 URL: http://localhost:${PORT}`);
 });
