@@ -92,12 +92,107 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // ── 2. HIGH ACCURACY PLANT DISEASE & PEST VISION API ──
-const PEST_KEYWORDS = ['aphid', 'worm', 'weevil', 'midge', 'mealybug', 'mite', 'moth', 'hispa', 'dead_heart', 'bug', 'fly', 'borer', 'thrip', 'hopper'];
+const PEST_KEYWORDS = ['aphid', 'worm', 'weevil', 'midge', 'mealybug', 'mite', 'moth', 'hispa', 'dead_heart', 'bug', 'fly', 'borer', 'thrip', 'hopper', 'caterpillar', 'beetle', 'scale', 'whitefly'];
+
+async function runOnnxInference(imageBuffer, mode = 'leaf', crop = '') {
+  if (!onnxSession || !Jimp || classNames.length === 0) return null;
+  
+  const image = await (Jimp.read ? Jimp.read(imageBuffer) : new Jimp(imageBuffer));
+  
+  // PyTorch standard ImageNet transform: Resize(256) maintaining aspect ratio, then CenterCrop(224)
+  const minDim = Math.min(image.bitmap.width, image.bitmap.height);
+  const scale = 256 / minDim;
+  const newW = Math.round(image.bitmap.width * scale);
+  const newH = Math.round(image.bitmap.height * scale);
+  
+  if (typeof image.resize === 'function') {
+    try {
+      image.resize({ w: newW, h: newH });
+    } catch(e) {
+      image.resize(newW, newH);
+    }
+  }
+  
+  const startX = Math.max(0, Math.round((newW - 224) / 2));
+  const startY = Math.max(0, Math.round((newH - 224) / 2));
+  
+  if (typeof image.crop === 'function') {
+    try {
+      image.crop({ x: startX, y: startY, w: 224, h: 224 });
+    } catch(e) {
+      image.crop(startX, startY, 224, 224);
+    }
+  }
+
+  const float32Data = new Float32Array(3 * 224 * 224);
+  const mean = [0.485, 0.456, 0.406];
+  const std = [0.229, 0.224, 0.225];
+
+  image.scan(0, 0, 224, 224, function (x, y, idx) {
+    const r = this.bitmap.data[idx + 0] / 255.0;
+    const g = this.bitmap.data[idx + 1] / 255.0;
+    const b = this.bitmap.data[idx + 2] / 255.0;
+    const pixelIdx = y * 224 + x;
+
+    float32Data[pixelIdx] = (r - mean[0]) / std[0];
+    float32Data[pixelIdx + 224 * 224] = (g - mean[1]) / std[1];
+    float32Data[pixelIdx + 2 * 224 * 224] = (b - mean[2]) / std[2];
+  });
+
+  const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, 224, 224]);
+  const results = await onnxSession.run({ [onnxSession.inputNames[0]]: inputTensor });
+  const logits = results[onnxSession.outputNames[0]].data;
+
+  // Softmax
+  let maxLogit = -Infinity;
+  for (let i = 0; i < logits.length; i++) {
+    if (logits[i] > maxLogit) maxLogit = logits[i];
+  }
+  let sumExp = 0;
+  const exps = new Float32Array(logits.length);
+  for (let i = 0; i < logits.length; i++) {
+    exps[i] = Math.exp(logits[i] - maxLogit);
+    sumExp += exps[i];
+  }
+  const probs = new Float32Array(logits.length);
+  for (let i = 0; i < logits.length; i++) {
+    probs[i] = exps[i] / sumExp;
+  }
+
+  let scored = classNames.map((name, i) => {
+    const nameLower = name.toLowerCase();
+    const isPest = PEST_KEYWORDS.some(k => nameLower.includes(k));
+    const isHealthy = nameLower.includes('healthy') || nameLower.includes('normal');
+    return {
+      label: name,
+      score: probs[i] || 0,
+      isPest,
+      isHealthy
+    };
+  });
+
+  // Filter based on target mode: 'leaf' vs 'pest' vs 'both'
+  if (mode === 'leaf') {
+    scored = scored.filter(s => !s.isPest || s.score > 0.6);
+  } else if (mode === 'pest') {
+    scored = scored.filter(s => s.isPest || s.score > 0.6);
+  }
+
+  // Filter based on crop
+  if (crop && crop.trim()) {
+    const cNorm = crop.toLowerCase().replace(/[^a-z]/g, '');
+    const cropMatches = scored.filter(s => s.label.toLowerCase().replace(/[^a-z]/g, '').includes(cNorm));
+    if (cropMatches.length > 0) scored = cropMatches;
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 6).map(s => ({ label: s.label, score: s.score }));
+}
 
 app.post('/api/pdx', async (req, res) => {
   try {
     let imageBuffer;
-    let mode = 'both'; // 'leaf' | 'pest' | 'both'
+    let mode = 'leaf'; // 'leaf' | 'pest' | 'both'
     let crop = '';
 
     if (Buffer.isBuffer(req.body)) {
@@ -106,7 +201,7 @@ app.post('/api/pdx', async (req, res) => {
       const b64Data = req.body.replace(/^data:image\/\w+;base64,/, '');
       imageBuffer = Buffer.from(b64Data, 'base64');
     } else if (req.body && req.body.image) {
-      mode = req.body.mode || 'both';
+      mode = req.body.mode || 'leaf';
       crop = req.body.crop || '';
       const b64Data = req.body.image.replace(/^data:image\/\w+;base64,/, '');
       imageBuffer = Buffer.from(b64Data, 'base64');
@@ -114,142 +209,104 @@ app.post('/api/pdx', async (req, res) => {
       imageBuffer = Buffer.from(JSON.stringify(req.body));
     }
 
-    // 1. Primary: ConvNeXt Tiny ONNX inference if session is active
+    // ══════════════════════════════════════════════════════════
+    // MODE: PEST & INSECT (Primary: Roboflow, Backup: Hugging Face)
+    // ══════════════════════════════════════════════════════════
+    if (mode === 'pest') {
+      // 1. Primary: Roboflow Model & Workflow
+      if (process.env.ROBOFLOW_API_KEY) {
+        try {
+          const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${process.env.ROBOFLOW_API_KEY}`;
+          const rfResponse = await fetch(roboflowUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: imageBuffer.toString('base64')
+          });
+
+          if (rfResponse.ok) {
+            const rfData = await rfResponse.json();
+            const preds = (rfData.predictions || []).slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+            if (preds.length && preds[0].class) {
+              return res.status(200).json({
+                topK: preds.map(p => ({ label: p.class, score: p.confidence || 0 })),
+                source: 'pest-patrol',
+                model: 'Roboflow Pest Detection'
+              });
+            }
+          }
+        } catch (rfErr) {
+          console.warn('Roboflow pest inference failed, falling back to Hugging Face:', rfErr.message);
+        }
+      }
+
+      // 2. Backup: Hugging Face Pest & Insect Inference Models
+      const hfPestModels = [
+        'https://api-inference.huggingface.co/models/dima806/pest-classification',
+        'https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification'
+      ];
+      const hfHeaders = { 'Content-Type': 'application/octet-stream' };
+      if (process.env.HF_TOKEN) hfHeaders['Authorization'] = `Bearer ${process.env.HF_TOKEN}`;
+
+      for (const hfUrl of hfPestModels) {
+        try {
+          const hfResponse = await fetch(hfUrl, {
+            method: 'POST',
+            headers: hfHeaders,
+            body: imageBuffer
+          });
+
+          if (hfResponse.ok) {
+            const data = await hfResponse.json();
+            if (Array.isArray(data) && data.length && data[0].label) {
+              return res.status(200).json({
+                topK: data.map(d => ({ label: d.label, score: d.score || 0 })),
+                source: 'ai-hf',
+                model: 'Hugging Face Pest Vision API'
+              });
+            }
+          }
+        } catch (hfErr) {
+          console.warn('HF pest inference failed:', hfErr.message);
+        }
+      }
+
+      // 3. Fallback: ONNX model pest subset
+      if (onnxSession && Jimp && classNames.length > 0) {
+        const onnxRes = await runOnnxInference(imageBuffer, 'pest', crop);
+        if (onnxRes && onnxRes.length) {
+          return res.status(200).json({
+            topK: onnxRes,
+            source: 'ai-local',
+            model: 'ConvNeXt Pest Classifier'
+          });
+        }
+      }
+
+      return res.status(200).json({ status: 'fallback', message: 'Use client heuristics' });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // MODE: LEAF DISEASE & AUTO (Primary: Local ConvNeXt ONNX, Backup: Hugging Face / Roboflow)
+    // ══════════════════════════════════════════════════════════
     if (onnxSession && Jimp && classNames.length > 0) {
       try {
-        const image = await (Jimp.read ? Jimp.read(imageBuffer) : new Jimp(imageBuffer));
-        
-        // PyTorch standard ImageNet transform: Resize(256) maintaining aspect ratio, then CenterCrop(224)
-        const minDim = Math.min(image.bitmap.width, image.bitmap.height);
-        const scale = 256 / minDim;
-        const newW = Math.round(image.bitmap.width * scale);
-        const newH = Math.round(image.bitmap.height * scale);
-        
-        if (typeof image.resize === 'function') {
-          try {
-            image.resize({ w: newW, h: newH });
-          } catch(e) {
-            image.resize(newW, newH);
-          }
+        const onnxRes = await runOnnxInference(imageBuffer, mode, crop);
+        if (onnxRes && onnxRes.length) {
+          return res.status(200).json({
+            topK: onnxRes,
+            source: 'ai-local',
+            model: 'ConvNeXt Tiny PlantDisease ONNX'
+          });
         }
-        
-        const startX = Math.max(0, Math.round((newW - 224) / 2));
-        const startY = Math.max(0, Math.round((newH - 224) / 2));
-        
-        if (typeof image.crop === 'function') {
-          try {
-            image.crop({ x: startX, y: startY, w: 224, h: 224 });
-          } catch(e) {
-            image.crop(startX, startY, 224, 224);
-          }
-        }
-
-        const float32Data = new Float32Array(3 * 224 * 224);
-        const mean = [0.485, 0.456, 0.406];
-        const std = [0.229, 0.224, 0.225];
-
-        image.scan(0, 0, 224, 224, function (x, y, idx) {
-          const r = this.bitmap.data[idx + 0] / 255.0;
-          const g = this.bitmap.data[idx + 1] / 255.0;
-          const b = this.bitmap.data[idx + 2] / 255.0;
-          const pixelIdx = y * 224 + x;
-
-          float32Data[pixelIdx] = (r - mean[0]) / std[0];
-          float32Data[pixelIdx + 224 * 224] = (g - mean[1]) / std[1];
-          float32Data[pixelIdx + 2 * 224 * 224] = (b - mean[2]) / std[2];
-        });
-
-        const inputTensor = new ort.Tensor('float32', float32Data, [1, 3, 224, 224]);
-        const results = await onnxSession.run({ [onnxSession.inputNames[0]]: inputTensor });
-        const logits = results[onnxSession.outputNames[0]].data;
-
-        // Softmax
-        let maxLogit = -Infinity;
-        for (let i = 0; i < logits.length; i++) {
-          if (logits[i] > maxLogit) maxLogit = logits[i];
-        }
-        let sumExp = 0;
-        const exps = new Float32Array(logits.length);
-        for (let i = 0; i < logits.length; i++) {
-          exps[i] = Math.exp(logits[i] - maxLogit);
-          sumExp += exps[i];
-        }
-        const probs = new Float32Array(logits.length);
-        for (let i = 0; i < logits.length; i++) {
-          probs[i] = exps[i] / sumExp;
-        }
-
-        let scored = classNames.map((name, i) => {
-          const nameLower = name.toLowerCase();
-          const isPest = PEST_KEYWORDS.some(k => nameLower.includes(k));
-          const isHealthy = nameLower.includes('healthy') || nameLower.includes('normal');
-          return {
-            label: name,
-            score: probs[i] || 0,
-            isPest,
-            isHealthy
-          };
-        });
-
-        // Filter based on user target mode: 'leaf' vs 'pest' vs 'both'
-        if (mode === 'leaf') {
-          // In leaf mode, prioritize leaf diseases and healthy foliage
-          scored = scored.filter(s => !s.isPest || s.score > 0.6);
-        } else if (mode === 'pest') {
-          // In pest mode, prioritize insect pests
-          scored = scored.filter(s => s.isPest || s.score > 0.6);
-        }
-
-        // Filter based on crop if specified
-        if (crop && crop.trim()) {
-          const cNorm = crop.toLowerCase().replace(/[^a-z]/g, '');
-          const cropMatches = scored.filter(s => s.label.toLowerCase().replace(/[^a-z]/g, '').includes(cNorm));
-          if (cropMatches.length > 0) scored = cropMatches;
-        }
-
-        scored.sort((a, b) => b.score - a.score);
-
-        return res.status(200).json({
-          topK: scored.slice(0, 6).map(s => ({ label: s.label, score: s.score })),
-          source: 'ai-local',
-          model: 'ConvNeXt Tiny PlantDisease ONNX'
-        });
       } catch (onnxErr) {
         console.warn('Backend ONNX execution error:', onnxErr.message);
       }
     }
 
-    // 2. Secondary: Roboflow Direct Model (if key set and pest mode)
-    if (process.env.ROBOFLOW_API_KEY && (mode === 'pest' || mode === 'both')) {
-      try {
-        const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${process.env.ROBOFLOW_API_KEY}`;
-        const rfResponse = await fetch(roboflowUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: imageBuffer.toString('base64')
-        });
-
-        if (rfResponse.ok) {
-          const rfData = await rfResponse.json();
-          const preds = (rfData.predictions || []).slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-          if (preds.length && preds[0].class) {
-            return res.status(200).json({
-              topK: preds.map(p => ({ label: p.class, score: p.confidence || 0 })),
-              source: 'pest-patrol'
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('Roboflow inference failed:', e.message);
-      }
-    }
-
-    // 3. Fallback: HuggingFace Plant Disease Model
+    // Backup: Hugging Face Plant Disease Model
     const hfUrl = 'https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification';
     const hfHeaders = { 'Content-Type': 'application/octet-stream' };
-    if (process.env.HF_TOKEN) {
-      hfHeaders['Authorization'] = `Bearer ${process.env.HF_TOKEN}`;
-    }
+    if (process.env.HF_TOKEN) hfHeaders['Authorization'] = `Bearer ${process.env.HF_TOKEN}`;
 
     try {
       const hfResponse = await fetch(hfUrl, {
@@ -263,7 +320,8 @@ app.post('/api/pdx', async (req, res) => {
         if (Array.isArray(data) && data.length && data[0].label) {
           return res.status(200).json({
             topK: data.map(d => ({ label: d.label, score: d.score || 0 })),
-            source: 'ai-hf'
+            source: 'ai-hf',
+            model: 'Hugging Face Plant Disease API'
           });
         }
       }

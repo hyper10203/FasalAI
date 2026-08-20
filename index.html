@@ -7358,9 +7358,9 @@ async function pdxRunLocalONNX(dataUrl) {
 
 /* ---- Multi-Tier AI Detection Pipeline ---- */
 async function pdxDetect(dataUrl, onStage){
-  // ── TIER 1 · Backend ConvNeXt Tiny ONNX API ──
+  // ── 1. PRIMARY BACKEND API ROUTE (/api/pdx) ──
   try {
-    if(onStage) onStage(pdxTargetMode === 'pest' ? 'Scanning with Pest AI…' : 'Classifying leaf disease with ConvNeXt AI…');
+    if(onStage) onStage(pdxTargetMode === 'pest' ? 'Scanning with Roboflow Pest AI…' : 'Classifying leaf disease with ConvNeXt AI…');
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
     const res = await fetch('/api/pdx', {
@@ -7373,16 +7373,49 @@ async function pdxDetect(dataUrl, onStage){
     if(res.ok){
       const data = await res.json();
       if(data && data.topK && data.topK.length > 0){
-        return { topK: data.topK, source: 'ai-local' };
+        return { topK: data.topK, source: data.source || 'ai-local' };
       }
     }
   } catch(e) {
-    console.warn('Backend PDX endpoint unavailable, switching to on-device runtime:', e.message);
+    console.warn('Backend PDX endpoint unavailable, switching to client pipeline:', e.message);
   }
 
-  // ── TIER 2 · On-Device ONNX Web Runtime (In-browser ConvNeXt) ──
+  // ── 2. PEST & INSECT MODE: ROBOFLOW PRIMARY ➔ HUGGING FACE BACKUP ──
+  if (pdxTargetMode === 'pest') {
+    // 2a. Primary: Roboflow Pest Detection
+    try {
+      if(onStage) onStage('Running Roboflow Pest Detection…');
+      const pp = await pdxDetectPestPatrol(dataUrl, onStage);
+      if(pp) return pp;
+    } catch(e) {
+      console.warn('Roboflow pest workflow failed:', e && e.message);
+    }
+
+    // 2b. Backup: Hugging Face Pest & Disease Models
+    try {
+      if(onStage) onStage('Cross-checking with Hugging Face pest models…');
+      const hf = await pdxDetectHF(dataUrl, onStage);
+      if(hf) return hf;
+    } catch(e) {
+      console.warn('Hugging Face inference failed:', e && e.message);
+    }
+
+    // 2c. Fallback: Local ONNX Pest subset
+    try {
+      if(onStage) onStage('Checking neural model…');
+      const localRes = await pdxRunLocalONNX(dataUrl);
+      if(localRes && localRes.topK && localRes.topK.length > 0){
+        return localRes;
+      }
+    } catch(e) {}
+
+    return pdxDetectHeuristic(dataUrl);
+  }
+
+  // ── 3. LEAF DISEASE MODE: LOCAL CONVNEXT ONNX PRIMARY ➔ HUGGING FACE BACKUP ──
+  // 3a. Primary: On-Device ONNX Web Runtime (In-browser ConvNeXt)
   try {
-    if(onStage) onStage('Running on-device neural network…');
+    if(onStage) onStage('Running on-device ConvNeXt model…');
     const localRes = await pdxRunLocalONNX(dataUrl);
     if(localRes && localRes.topK && localRes.topK.length > 0){
       return localRes;
@@ -7391,18 +7424,7 @@ async function pdxDetect(dataUrl, onStage){
     console.warn('On-device ONNX runtime fallback:', e && e.message);
   }
 
-  // ── TIER 3 · Roboflow Pest Detection (For Pest Mode or Fallback) ──
-  if (pdxTargetMode === 'pest' || pdxTargetMode === 'both') {
-    try {
-      if(onStage) onStage('Cross-checking with Pest Patrol…');
-      const pp = await pdxDetectPestPatrol(dataUrl, onStage);
-      if(pp) return pp;
-    } catch(e) {
-      console.warn('Pest Patrol workflow failed:', e && e.message);
-    }
-  }
-
-  // ── TIER 4 · Hugging Face Inference API ──
+  // 3b. Backup: Hugging Face Plant Disease Inference
   try {
     if(onStage) onStage('Checking Hugging Face knowledge base…');
     const hf = await pdxDetectHF(dataUrl, onStage);
@@ -7411,7 +7433,7 @@ async function pdxDetect(dataUrl, onStage){
     console.warn('Hugging Face inference failed:', e && e.message);
   }
 
-  // ── TIER 5 · Smart Color & Climate Heuristic ──
+  // 3c. Fallback: Heuristic
   if(onStage) onStage('Analysing image color patterns…');
   return pdxDetectHeuristic(dataUrl);
 }
