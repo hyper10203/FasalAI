@@ -5626,37 +5626,38 @@ function cycleOnboardingLang(){
 
 function launchApp(){
   document.getElementById('login-page').style.display='none';
+  const obPage = document.getElementById('onboarding-page');
+  if(obPage) obPage.style.display='none';
+  const tutOverlay = document.getElementById('tut-overlay');
+  if(tutOverlay) tutOverlay.classList.remove('show');
+  document.body.style.overflow = '';
   document.getElementById('app').style.display='block';
-  document.getElementById('user-avatar').textContent=currentUser.initial||'U';
-  document.getElementById('user-name').textContent=currentUser.name||'User';
+  document.getElementById('user-avatar').textContent=(currentUser&&currentUser.initial)||'U';
+  document.getElementById('user-name').textContent=(currentUser&&currentUser.name)||'User';
   const topChip = document.getElementById('topbar-user-chip');
-  if(topChip) topChip.title = currentUser.name || 'Account';
-  document.getElementById('account-avatar').textContent=currentUser.initial||'U';
-  document.getElementById('account-name').textContent=currentUser.name||'User';
-  document.getElementById('account-username').textContent=currentUser.username||'—';
+  if(topChip) topChip.title = (currentUser&&currentUser.name) || 'Account';
+  document.getElementById('account-avatar').textContent=(currentUser&&currentUser.initial)||'U';
+  document.getElementById('account-name').textContent=(currentUser&&currentUser.name)||'User';
+  document.getElementById('account-username').textContent=(currentUser&&currentUser.username)||'—';
   document.getElementById('account-password').textContent='••••••••';
-  document.getElementById('account-login-date').textContent=currentUser.loginDate||'—';
-  document.getElementById('account-created-date').textContent=currentUser.createdDate||'—';
+  document.getElementById('account-login-date').textContent=(currentUser&&currentUser.loginDate)||'—';
+  document.getElementById('account-created-date').textContent=(currentUser&&currentUser.createdDate)||'—';
   // Reset password eye icon
   const pwIcon=document.querySelector('#toggle-account-password i');
   if(pwIcon) pwIcon.className='fas fa-eye';
   initMap();
   setTimeout(initCharts,800);
-  // Pre-fill HF token if saved
-  // token input removed — keys are set directly in code
   window._marketFetched=false;
   _lastPage='dashboard';
-  // Set initial market status
-  const ms=document.getElementById('market-live-status'); if(ms) ms.textContent='Will load on visit';
+  const ms=document.getElementById('market-live-status'); if(ms) ms.textContent='Mandi Source: AGMARKNET Live';
   loadSavedLogo();
   // Kick off scroll motion + reveal the initial page
   const tt=document.getElementById('topbar-page-title'); if(tt) tt.textContent=pageTitles['dashboard']||'Pulse';
   fasalInitParallax();
   setTimeout(()=>{ const pg=document.querySelector('.page.active'); if(pg) fasalRevealPage(pg); },60);
-  // 3D + interactive widgets + tutorial
+  // 3D + interactive widgets
   try{ applyThemeCanvas(); }catch(e){}
   setTimeout(()=>{ initFasal3D(); initTiltWidgets(); initTutorial(); },200);
-  if(!localStorage.getItem('fasal_tut_done')) setTimeout(startTutorial, 1400);
 }
 
 function logout(){
