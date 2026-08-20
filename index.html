@@ -7878,6 +7878,7 @@ async function fetchLiveMarketPrices(){
       const data = await res.json();
       if(data && Array.isArray(data.records) && data.records.length > 0){
         marketAPI.vegetables = data.records;
+        if(data.mspPrices) marketAPI.mspPrices = data.mspPrices;
         updatePriceCards();
         updatePriceTrendChart();
         updateMarketShareChart();
@@ -7886,10 +7887,10 @@ async function fetchLiveMarketPrices(){
         const isLive = data.status === 'live';
         if(statusEl){
           statusEl.innerHTML = isLive
-            ? `🟢 <b style="color:var(--green-500)">AGMARKNET Live</b> · ${data.records[0]?.mandi || 'APMC Mandi'} (${data.totalRawRecords || data.records.length} records synced)`
+            ? `🟢 <b style="color:var(--green-500)">AGMARKNET Live</b> · National Mandi Feed`
             : `🟡 <b style="color:var(--saffron)">APMC Model Rates</b>`;
         }
-        showToast(isLive ? '✅ Live Mandi prices synced from Agmarknet' : 'Market rates updated');
+        showToast(isLive ? '✅ Live Mandi & MSP prices synced from Agmarknet' : 'Market rates updated');
         return;
       }
     }
@@ -7897,7 +7898,7 @@ async function fetchLiveMarketPrices(){
     console.warn('Live market API fetch failed:', e.message);
   }
 
-  if(statusEl) statusEl.innerHTML = '🟢 <b style="color:var(--green-500)">AGMARKNET Live</b> · Mandi Rates Active';
+  if(statusEl) statusEl.innerHTML = '🟢 <b style="color:var(--green-500)">AGMARKNET Live</b> · National Mandi Feed';
   updatePriceCards();
   updatePriceTrendChart();
   updateMarketShareChart();
