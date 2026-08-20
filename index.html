@@ -3800,16 +3800,13 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
                 <span class="badge-pill" id="pdx-status-badge" style="font-size:10px">READY</span>
               </div>
               <div class="card-body">
-                <!-- Target Mode Selector (Leaf Disease vs Pest vs Auto) -->
+                <!-- Target Mode Selector (Leaf Disease vs Pest & Insect) -->
                 <div class="pdx-mode-bar" style="display:flex;gap:8px;margin-bottom:14px;background:var(--bg-2,#201710);padding:4px;border-radius:var(--radius-sm);border:1px solid var(--border)">
-                  <button type="button" class="pdx-mode-btn active" id="pdx-mode-leaf" onclick="setPdxTargetMode('leaf')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:var(--green-600);color:#fff;font-weight:600;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
+                  <button type="button" class="pdx-mode-btn active" id="pdx-mode-leaf" onclick="setPdxTargetMode('leaf')" style="flex:1;padding:9px 12px;border:none;border-radius:8px;background:var(--green-600);color:#fff;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
                     <i class="fas fa-leaf"></i> <span>Leaf Disease</span>
                   </button>
-                  <button type="button" class="pdx-mode-btn" id="pdx-mode-pest" onclick="setPdxTargetMode('pest')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:transparent;color:var(--text-mid);font-weight:500;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
+                  <button type="button" class="pdx-mode-btn" id="pdx-mode-pest" onclick="setPdxTargetMode('pest')" style="flex:1;padding:9px 12px;border:none;border-radius:8px;background:transparent;color:var(--text-mid);font-weight:500;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
                     <i class="fas fa-bug"></i> <span>Pest & Insect</span>
-                  </button>
-                  <button type="button" class="pdx-mode-btn" id="pdx-mode-both" onclick="setPdxTargetMode('both')" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:transparent;color:var(--text-mid);font-weight:500;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease">
-                    <i class="fas fa-wand-magic-sparkles"></i> <span>Auto (Both)</span>
                   </button>
                 </div>
 
@@ -7198,22 +7195,30 @@ function pdxResizeImage(file){
   });
 }
 
-/* ---- Target Mode (Leaf Disease vs Pest & Insect vs Auto) ---- */
-let pdxTargetMode = 'leaf'; // 'leaf' | 'pest' | 'both'
+/* ---- Target Mode (Leaf Disease vs Pest & Insect) ---- */
+let pdxTargetMode = 'leaf'; // 'leaf' | 'pest'
 function setPdxTargetMode(mode){
+  if(mode !== 'pest') mode = 'leaf';
   pdxTargetMode = mode;
-  document.querySelectorAll('.pdx-mode-btn').forEach(b => {
-    const isActive = b.id === 'pdx-mode-' + mode;
-    b.classList.toggle('active', isActive);
-    b.style.background = isActive ? (mode === 'pest' ? 'var(--saffron, #e0a63a)' : 'var(--green-600)') : 'transparent';
-    b.style.color = isActive ? '#fff' : 'var(--text-mid)';
-    b.style.fontWeight = isActive ? '600' : '500';
-  });
+  const leafBtn = document.getElementById('pdx-mode-leaf');
+  const pestBtn = document.getElementById('pdx-mode-pest');
+  if(leafBtn) {
+    leafBtn.classList.toggle('active', mode === 'leaf');
+    leafBtn.style.background = mode === 'leaf' ? 'var(--green-600)' : 'transparent';
+    leafBtn.style.color = mode === 'leaf' ? '#fff' : 'var(--text-mid)';
+    leafBtn.style.fontWeight = mode === 'leaf' ? '600' : '500';
+  }
+  if(pestBtn) {
+    pestBtn.classList.toggle('active', mode === 'pest');
+    pestBtn.style.background = mode === 'pest' ? 'var(--saffron, #e0a63a)' : 'transparent';
+    pestBtn.style.color = mode === 'pest' ? '#fff' : 'var(--text-mid)';
+    pestBtn.style.fontWeight = mode === 'pest' ? '600' : '500';
+  }
   const phEl = document.querySelector('#pdx-placeholder div[data-i18n="drop_leaf"]');
   if(phEl){
-    phEl.textContent = mode === 'pest' ? 'Drop an insect / pest photo here' : (mode === 'leaf' ? 'Drop a crop leaf photo here' : 'Drop a leaf or pest photo here');
+    phEl.textContent = mode === 'pest' ? 'Drop an insect / pest photo here' : 'Drop a crop leaf photo here';
   }
-  showToast(mode === 'leaf' ? 'Mode: Leaf Disease Detection' : (mode === 'pest' ? 'Mode: Pest & Insect Identification' : 'Mode: Auto (Both Disease & Pest)'));
+  showToast(mode === 'leaf' ? '🍃 Mode: Leaf Disease Detection (ConvNeXt AI)' : '🐛 Mode: Pest & Insect Identification (Roboflow AI)');
 }
 
 /* ---- High-Accuracy Local & On-Device ONNX ViT / ConvNeXt Pipeline ---- */
