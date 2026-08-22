@@ -23,45 +23,22 @@ export default async function handler(req, res) {
       imageBuffer = req.body;
     }
 
-    // HuggingFace Plant Disease Identification Model
-    const hfUrl = 'https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification';
-    const hfHeaders = { 'Content-Type': 'application/octet-stream' };
-    if (process.env.HF_TOKEN) {
-      hfHeaders['Authorization'] = `Bearer ${process.env.HF_TOKEN}`;
-    }
-
-    const hfResponse = await fetch(hfUrl, {
+    // Roboflow Direct Model
+    const roboflowKey = process.env.ROBOFLOW_API_KEY || 'XCb25NxLnpNfA24YIaNo';
+    const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${roboflowKey}`;
+    const rfResponse = await fetch(roboflowUrl, {
       method: 'POST',
-      headers: hfHeaders,
-      body: imageBuffer
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: imageBuffer.toString('base64'),
+      signal: AbortSignal.timeout(20000)
     }).catch(() => null);
 
-    if (hfResponse && hfResponse.ok) {
-      const data = await hfResponse.json();
-      if (Array.isArray(data) && data.length && data[0].label) {
-        return res.status(200).json({
-          predictions: data.map(d => ({ class: d.label, confidence: d.score || 0 })),
-          source: 'hf'
-        });
-      }
+    if (rfResponse && rfResponse.ok) {
+      const rfData = await rfResponse.json();
+      return res.status(200).json(rfData);
     }
 
-    // Roboflow Direct Model (if key available)
-    if (process.env.ROBOFLOW_API_KEY) {
-      const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${process.env.ROBOFLOW_API_KEY}`;
-      const rfResponse = await fetch(roboflowUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: imageBuffer.toString('base64')
-      }).catch(() => null);
-
-      if (rfResponse && rfResponse.ok) {
-        const rfData = await rfResponse.json();
-        return res.status(200).json(rfData);
-      }
-    }
-
-    return res.status(200).json({ status: 'fallback' });
+    return res.status(200).json({ status: 'invalid', predictions: [] });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

@@ -207,52 +207,56 @@ app.post('/api/pdx', async (req, res) => {
       imageBuffer = Buffer.from(JSON.stringify(req.body));
     }
 
-    // PEST & INSECT MODE: High-accuracy ConvNeXt ONNX + Hugging Face Pest Classifier
+    // PEST & INSECT MODE: Roboflow API (Primary Model)
     if (mode === 'pest') {
-      if (onnxSession && Jimp && classNames.length > 0) {
-        try {
-          const onnxRes = await runOnnxInference(imageBuffer, 'pest', crop);
-          if (onnxRes && onnxRes.length && onnxRes[0].score > 0.4) {
+      const roboflowKey = process.env.ROBOFLOW_API_KEY || 'XCb25NxLnpNfA24YIaNo';
+      try {
+        const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${roboflowKey}`;
+        const rfResponse = await fetch(roboflowUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: imageBuffer.toString('base64'),
+          signal: AbortSignal.timeout(20000)
+        });
+
+        if (rfResponse.ok) {
+          const rfData = await rfResponse.json();
+          const preds = (rfData.predictions || []).slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+          if (preds.length && preds[0].class) {
             return res.status(200).json({
-              topK: onnxRes,
-              source: 'ai-local'
+              topK: preds.map(p => ({ label: p.class, score: p.confidence || 0 })),
+              source: 'ai'
             });
           }
-        } catch(onnxErr) {
-          console.warn('Backend ONNX pest execution error:', onnxErr.message);
         }
+      } catch (rfErr) {
+        console.warn('Roboflow serverless pest inference error:', rfErr.message);
       }
 
-      const hfPestModels = [
-        'https://api-inference.huggingface.co/models/dima806/pest-classification',
-        'https://api-inference.huggingface.co/models/linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification'
-      ];
-      const hfHeaders = { 'Content-Type': 'application/octet-stream' };
-      if (process.env.HF_TOKEN) hfHeaders['Authorization'] = `Bearer ${process.env.HF_TOKEN}`;
+      try {
+        const detectUrl = `https://detect.roboflow.com/soilscope/4?api_key=${roboflowKey}`;
+        const rfResponse = await fetch(detectUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: imageBuffer.toString('base64'),
+          signal: AbortSignal.timeout(20000)
+        });
 
-      for (const hfUrl of hfPestModels) {
-        try {
-          const hfResponse = await fetch(hfUrl, {
-            method: 'POST',
-            headers: hfHeaders,
-            body: imageBuffer
-          });
-
-          if (hfResponse.ok) {
-            const data = await hfResponse.json();
-            if (Array.isArray(data) && data.length && data[0].label) {
-              return res.status(200).json({
-                topK: data.map(d => ({ label: d.label, score: d.score || 0 })),
-                source: 'ai-hf'
-              });
-            }
+        if (rfResponse.ok) {
+          const rfData = await rfResponse.json();
+          const preds = (rfData.predictions || []).slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+          if (preds.length && preds[0].class) {
+            return res.status(200).json({
+              topK: preds.map(p => ({ label: p.class, score: p.confidence || 0 })),
+              source: 'ai'
+            });
           }
-        } catch (hfErr) {
-          console.warn('HF pest inference failed:', hfErr.message);
         }
+      } catch (rfErr2) {
+        console.warn('Roboflow detect pest inference error:', rfErr2.message);
       }
 
-      return res.status(200).json({ status: 'fallback', message: 'Use client heuristics' });
+      return res.status(200).json({ topK: [], source: 'invalid', message: 'No pest detected by Roboflow' });
     }
 
     // LEAF DISEASE MODE

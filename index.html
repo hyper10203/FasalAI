@@ -5380,7 +5380,7 @@ let nasaPowerData={};
    Replace ROBOFLOW_API_KEY with your free key from roboflow.com
    Fallback: smart climate-based detection from PEST_DB
    ───────────────────────────────────── */
-const ROBOFLOW_API_KEY = 'YOUR_ROBOFLOW_KEY_HERE';
+const ROBOFLOW_API_KEY = 'XCb25NxLnpNfA24YIaNo';
 const ROBOFLOW_MODEL_URL = 'https://serverless.roboflow.com/aarav-narula/workflows/detect-and-classify-2';
 const ROBOFLOW_DIRECT_URL = 'https://serverless.roboflow.com/soilscope/4';
 // Secondary free model: Hugging Face plant-disease CNN (public, no auth needed)
@@ -7438,25 +7438,16 @@ async function pdxDetect(dataUrl, onStage){
     console.warn('Backend PDX endpoint unavailable, switching to client pipeline:', e.message);
   }
 
-  // ── 2. PEST & INSECT MODE: HIGH ACCURACY LOCAL ONNX ➔ HUGGING FACE BACKUP ──
+  // ── 2. PEST & INSECT MODE: ROBOFLOW DIRECT INFERENCE ──
   if (pdxTargetMode === 'pest') {
     try {
-      if(onStage) onStage('Analyzing pest characteristics…');
-      const localRes = await pdxRunLocalONNX(dataUrl);
-      if(localRes && localRes.topK && localRes.topK.length > 0){
-        return { topK: localRes.topK, source: 'ai' };
-      }
-    } catch(e) {}
-
-    try {
-      if(onStage) onStage('Cross-referencing pest database…');
-      const hf = await pdxDetectHF(dataUrl, onStage);
-      if(hf) return { topK: hf.topK, source: 'ai' };
+      if(onStage) onStage('Running Roboflow pest detection…');
+      const pp = await pdxDetectPestPatrol(dataUrl, onStage);
+      if(pp && pp.topK && pp.topK.length > 0) return pp;
     } catch(e) {
-      console.warn('HF pest inference fallback:', e && e.message);
+      console.warn('Roboflow client inference error:', e && e.message);
     }
-
-    return pdxDetectHeuristic(dataUrl);
+    return { topK: [], source: 'invalid' };
   }
 
   // ── 3. LEAF DISEASE MODE: LOCAL ONNX PRIMARY ➔ HUGGING FACE BACKUP ──
@@ -7481,75 +7472,40 @@ async function pdxDetect(dataUrl, onStage){
   return pdxDetectHeuristic(dataUrl);
 }
 
-/* ── TIER 2 — SoilScope's original Pest Patrol pipeline ── */
+/* ── Roboflow Pest Detection pipeline ── */
 async function pdxDetectPestPatrol(dataUrl, onStage){
   const b64 = dataUrl.split(',')[1];
+  const apiKey = (typeof ROBOFLOW_API_KEY!=='undefined' && ROBOFLOW_API_KEY) ? ROBOFLOW_API_KEY : 'XCb25NxLnpNfA24YIaNo';
 
-  // 2a. Roboflow workflow, then the direct SoilScope model
-  if(typeof ROBOFLOW_API_KEY!=='undefined' && ROBOFLOW_API_KEY && ROBOFLOW_API_KEY!=='YOUR_ROBOFLOW_KEY_HERE'){
-    try{
-      const res = await fetch(ROBOFLOW_MODEL_URL,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({api_key:ROBOFLOW_API_KEY, inputs:{image:{type:'base64', value:b64}}}),
-        signal: AbortSignal.timeout(25000)
-      });
-      if(res.ok){
-        const data = await res.json();
-        const out0 = (data.outputs||[])[0] || {};
-        let preds = (out0.detection_predictions||{}).predictions || [];
-        if(!preds.length) preds = (out0.predictions||{}).predictions || (Array.isArray(out0.predictions)?out0.predictions:[]);
-        preds = preds.slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
-        if(preds.length && preds[0].class){
-          return {topK: preds.map(p=>({label:p.class, score:p.confidence||0})), source:'pest-patrol'};
-        }
-      }
-    }catch(e){ console.warn('Roboflow workflow failed:', e.message); }
-
-    try{
-      const res = await fetch(ROBOFLOW_DIRECT_URL+'?api_key='+ROBOFLOW_API_KEY,{
-        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:b64, signal:AbortSignal.timeout(25000)
-      });
-      if(res.ok){
-        const d = await res.json();
-        const preds = (d.predictions||[]).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
-        if(preds.length && preds[0].class){
-          return {topK: preds.map(p=>({label:p.class, score:p.confidence||0})), source:'pest-patrol'};
-        }
-      }
-    }catch(e){ console.warn('Roboflow direct failed:', e.message); }
-  }
-
-  // 2b. Canvas colour analysis + local climate reasoning (Pest Patrol's own logic)
+  // 1. Direct Roboflow serverless SoilScope model
   try{
-    const colors = await analyzeImageColors(dataUrl);
-    const fd = (typeof currentFarmData!=='undefined' && currentFarmData) ? currentFarmData : {};
-    const temp = (fd.air && fd.air.temperature) || 25;
-    const hum  = (fd.air && fd.air.humidity)    || 60;
-    let name = null, score = 0;
+    const res = await fetch('https://serverless.roboflow.com/soilscope/4?api_key='+apiKey,{
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:b64, signal:AbortSignal.timeout(20000)
+    });
+    if(res.ok){
+      const d = await res.json();
+      const preds = (d.predictions||[]).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+      if(preds.length && preds[0].class){
+        return {topK: preds.map(p=>({label:p.class, score:p.confidence||0})), source:'ai'};
+      }
+    }
+  }catch(e){ console.warn('Roboflow serverless failed:', e.message); }
 
-    if(colors.greenPct > 35 && colors.brownPct < 8 && colors.yellowPct < 8 && colors.darkPct < 8){
-      return {topK:[{label:(pdxSelectedCrop||'Crop')+'_healthy', score:Math.min(0.85, 0.6+colors.greenPct/300)}], source:'pest-patrol'};
+  // 2. Direct Roboflow detect endpoint fallback
+  try{
+    const res = await fetch('https://detect.roboflow.com/soilscope/4?api_key='+apiKey,{
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:b64, signal:AbortSignal.timeout(20000)
+    });
+    if(res.ok){
+      const d = await res.json();
+      const preds = (d.predictions||[]).slice().sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+      if(preds.length && preds[0].class){
+        return {topK: preds.map(p=>({label:p.class, score:p.confidence||0})), source:'ai'};
+      }
     }
-    if(colors.brownPct > 8 && colors.darkPct > 5){
-      name = hum > 70 ? 'Downy Mildew' : 'Early Blight';
-      score = Math.min(0.72, 0.40 + colors.brownPct/100);
-    } else if(colors.yellowPct > 8){
-      name = 'Aphids';           score = Math.min(0.65, 0.35 + colors.yellowPct/100);
-    } else if(colors.whitePct > 8){
-      name = 'Powdery Mildew';   score = Math.min(0.68, 0.38 + colors.whitePct/100);
-    } else if(colors.brownPct > 5){
-      name = 'Spider Mites';     score = Math.min(0.60, 0.35 + colors.brownPct/100);
-    } else if(hum > 65 && temp > 20){
-      name = 'Downy Mildew';     score = 0.52;
-    } else if(temp > 30){
-      name = 'Spider Mites';     score = 0.50;
-    }
-    if(name){
-      const hit = (typeof PEST_DB!=='undefined') ? PEST_DB.find(p=>p.name===name) : null;
-      return {topK:[{label:(hit? hit.name : name), score}], source:'pest-patrol'};
-    }
-  }catch(e){ console.warn('Pest Patrol colour analysis failed:', e.message); }
+  }catch(e){ console.warn('Roboflow detect failed:', e.message); }
 
   return null;
 }
@@ -8140,224 +8096,63 @@ async function runPestDetection(){
 
   let detected = false;
 
-  // ── ATTEMPT 1: Roboflow Workflow (detect-and-classify) ──
-  if(ROBOFLOW_API_KEY && ROBOFLOW_API_KEY !== 'YOUR_ROBOFLOW_KEY_HERE'){
-    try{
-      document.getElementById('pp-loading-text').textContent='Running Roboflow AI workflow…';
-      const res = await fetch(ROBOFLOW_MODEL_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: ROBOFLOW_API_KEY,
-          inputs: { image: { type: 'base64', value: b64 } }
-        }),
-        signal: AbortSignal.timeout(30000)
-      });
-      if(res.ok){
-        const data = await res.json();
-        clearInterval(lt);
-        if(scanBeam) scanBeam.style.display='none';
-        let label = '', confidence = 75;
-        try {
-          const out0 = (data.outputs || [])[0] || {};
-          const detPreds = (out0.detection_predictions || {}).predictions || [];
-          if(detPreds.length > 0){
-            const top = detPreds.sort((a,b) => (b.confidence||0) - (a.confidence||0))[0];
-            label = top.class || ''; confidence = Math.round((top.confidence || 0.75) * 100);
-          }
-          if(!label){
-            const fp = (out0.predictions || {}).predictions || (Array.isArray(out0.predictions) ? out0.predictions : []);
-            if(fp.length > 0){
-              const top = fp.sort((a,b) => (b.confidence||0) - (a.confidence||0))[0];
-              label = top.class || ''; confidence = Math.round((top.confidence||0.75)*100);
-            }
-          }
-        } catch(pe){ console.warn('Roboflow parse error:', pe); }
-
-        if(label){
-          if(label.toLowerCase().includes('healthy')){ handleHealthyResult(confidence); detected = true; }
-          else {
+  // ── Roboflow Pest & Disease Model ──
+  const apiKey = (typeof ROBOFLOW_API_KEY !== 'undefined' && ROBOFLOW_API_KEY) ? ROBOFLOW_API_KEY : 'XCb25NxLnpNfA24YIaNo';
+  try {
+    document.getElementById('pp-loading-text').textContent = 'Running Roboflow AI model…';
+    const directRes = await fetch('https://serverless.roboflow.com/soilscope/4?api_key=' + apiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: b64,
+      signal: AbortSignal.timeout(25000)
+    });
+    if (directRes.ok) {
+      const dData = await directRes.json();
+      clearInterval(lt);
+      if (scanBeam) scanBeam.style.display = 'none';
+      const preds = dData.predictions || [];
+      if (preds.length > 0) {
+        const top = preds.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+        const label = top.class || '';
+        const confidence = Math.round((top.confidence || 0.75) * 100);
+        if (label) {
+          if (label.toLowerCase().includes('healthy')) {
+            handleHealthyResult(confidence);
+            detected = true;
+          } else {
             const diseaseInfo = mapDiseaseLabel(label);
-            if(diseaseInfo){
-              showPestResult({name:diseaseInfo.name,scientific:diseaseInfo.sci,severity:diseaseInfo.sev,desc:diseaseInfo.desc,treatments:diseaseInfo.treatments,isDisease:true}, confidence, true);
+            if (diseaseInfo) {
+              showPestResult({ name: diseaseInfo.name, scientific: diseaseInfo.sci, severity: diseaseInfo.sev, desc: diseaseInfo.desc, treatments: diseaseInfo.treatments, isDisease: true }, confidence, true);
             } else {
-              const cleanLabel = label.replace(/___/g,' - ').replace(/_/g,' ');
-              showPestResult({name:cleanLabel,scientific:'Roboflow AI Detection',severity:'medium',desc:'Roboflow detected: "'+cleanLabel+'" with '+confidence+'% confidence. Manual inspection recommended.',treatments:['Consult your local KVK or agricultural extension officer','Monitor the affected plant daily','Take close-up photos from multiple angles for confirmation'],isDisease:true}, confidence, true);
+              const cleanLabel = label.replace(/___/g, ' - ').replace(/_/g, ' ');
+              showPestResult({ name: cleanLabel, scientific: 'Roboflow Detection', severity: 'medium', desc: 'Roboflow detected: "' + cleanLabel + '" with ' + confidence + '% confidence. Manual inspection recommended.', treatments: ['Consult your local KVK or agricultural extension officer', 'Monitor the affected plant daily', 'Take close-up photos from multiple angles for confirmation'], isDisease: true }, confidence, true);
             }
             detected = true;
           }
         }
       }
-    }catch(e){ console.warn('Roboflow failed:', e.message); }
-  }
-
-  // ── ATTEMPT 1.5: Roboflow Direct Model (soilscope/4) ──
-  if(!detected && ROBOFLOW_API_KEY && ROBOFLOW_API_KEY !== 'YOUR_ROBOFLOW_KEY_HERE'){
-    try{
-      document.getElementById('pp-loading-text').textContent='Running FasalAI direct model…';
-      const directRes = await fetch(ROBOFLOW_DIRECT_URL + '?api_key=' + ROBOFLOW_API_KEY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: b64,
-        signal: AbortSignal.timeout(25000)
-      });
-      if(directRes.ok){
-        const dData = await directRes.json();
-        clearInterval(lt);
-        if(scanBeam) scanBeam.style.display='none';
-        const preds = dData.predictions || [];
-        if(preds.length > 0){
-          const top = preds.sort((a,b) => (b.confidence||0) - (a.confidence||0))[0];
-          const label = top.class || '';
-          const confidence = Math.round((top.confidence || 0.75) * 100);
-          if(label){
-            if(label.toLowerCase().includes('healthy')){ handleHealthyResult(confidence); detected = true; }
-            else {
-              const diseaseInfo = mapDiseaseLabel(label);
-              if(diseaseInfo){
-                showPestResult({name:diseaseInfo.name,scientific:diseaseInfo.sci,severity:diseaseInfo.sev,desc:diseaseInfo.desc,treatments:diseaseInfo.treatments,isDisease:true}, confidence, true);
-              } else {
-                const cleanLabel = label.replace(/___/g,' - ').replace(/_/g,' ');
-                showPestResult({name:cleanLabel,scientific:'FasalAI AI Detection',severity:'medium',desc:'FasalAI model detected: "'+cleanLabel+'" with '+confidence+'% confidence. Manual inspection recommended.',treatments:['Consult your local KVK or agricultural extension officer','Monitor the affected plant daily','Take close-up photos from multiple angles for confirmation'],isDisease:true}, confidence, true);
-              }
-              detected = true;
-            }
-          }
-        }
-      }
-    }catch(e){ console.warn('Roboflow direct model failed:', e.message); }
-  }
-
-  // ── ATTEMPT 2: Try multiple HF plant disease CNNs ──
-  if(!detected){
-    for(const modelUrl of HF_MODELS){
-      if(detected) break;
-      try{
-        document.getElementById('pp-loading-text').textContent='Connecting to plant-disease AI model…';
-        const hfHeaders = {'Content-Type':'application/octet-stream'};
-        if(HF_PLANT_KEY && HF_PLANT_KEY !== 'YOUR_HF_TOKEN_HERE') hfHeaders['Authorization'] = 'Bearer ' + HF_PLANT_KEY;
-        let res = await fetch(modelUrl,{ method:'POST', headers:hfHeaders, body:blob, signal:AbortSignal.timeout(20000) });
-        // If model is cold-starting (503), wait and retry once
-        if(res.status === 503){
-          document.getElementById('pp-loading-text').textContent='AI model warming up, please wait…';
-          await new Promise(r=>setTimeout(r,15000));
-          res = await fetch(modelUrl,{ method:'POST', headers:hfHeaders, body:blob, signal:AbortSignal.timeout(20000) });
-        }
-        if(res.ok){
-          const data = await res.json();
-          if(Array.isArray(data) && data.length > 0 && data[0].label){
-            clearInterval(lt);
-            if(scanBeam) scanBeam.style.display='none';
-            handlePestResult(data);
-            detected = true;
-          }
-        }
-      }catch(e){ console.warn('HF model failed ('+modelUrl.split('/').pop()+'):', e.message); }
     }
+  } catch (e) {
+    console.warn('Roboflow direct model failed:', e.message);
   }
 
-  // ── ATTEMPT 3: Canvas-based image colour analysis ──
-  // This analyses the ACTUAL IMAGE — not random guessing
-  if(!detected){
+  if (!detected) {
     clearInterval(lt);
-    if(scanBeam) scanBeam.style.display='none';
-    document.getElementById('pp-loading-text').textContent='Analysing image colour patterns…';
-
-    try{
-      const colors = await analyzeImageColors(pestImageData);
-      const fd = currentFarmData || {};
-
-      // Determine plant health from actual pixel analysis
-      if(colors.greenPct > 35 && colors.brownPct < 8 && colors.yellowPct < 8 && colors.darkPct < 8){
-        // Predominantly green = likely healthy
-        handleHealthyResult(Math.min(85, 60 + colors.greenPct/3));
-      } else {
-        // Determine most likely issue based on actual image colours + climate context
-        let diagnosis = null;
-        let confidence = 0;
-        let reason = '';
-
-        if(colors.brownPct > 8 && colors.darkPct > 5){
-          // Brown spots + dark areas = likely blight or rot
-          const temp = fd.air?.temperature || 25;
-          const hum = fd.air?.humidity || 60;
-          if(hum > 70){
-            diagnosis = PEST_DB.find(p=>p.name==='Downy Mildew') || PEST_DB.find(p=>p.name==='Early Blight');
-            reason = `Image shows ${colors.brownPct}% brown and ${colors.darkPct}% dark patches. High humidity (${hum}%) in your area favours fungal disease.`;
-          } else {
-            diagnosis = PEST_DB.find(p=>p.name==='Early Blight');
-            reason = `Image shows ${colors.brownPct}% brown lesions and ${colors.darkPct}% dark spots, consistent with blight symptoms.`;
-          }
-          confidence = Math.min(72, 40 + colors.brownPct);
-        } else if(colors.yellowPct > 8){
-          // Yellowing = nutrient deficiency, virus, or aphid damage
-          diagnosis = PEST_DB.find(p=>p.name==='Aphids') || PEST_DB.find(p=>p.name==='Aphid-borne Viruses');
-          reason = `Image shows ${colors.yellowPct}% yellowing. This can indicate nutrient deficiency, viral infection, or sap-sucking insect damage.`;
-          confidence = Math.min(65, 35 + colors.yellowPct);
-        } else if(colors.whitePct > 8){
-          // White patches = powdery mildew or mealybugs
-          diagnosis = PEST_DB.find(p=>p.name==='Powdery Mildew') || PEST_DB.find(p=>p.name==='Mealybugs');
-          reason = `Image shows ${colors.whitePct}% white/powdery patches, consistent with fungal coating or insect residue.`;
-          confidence = Math.min(68, 38 + colors.whitePct);
-        } else if(colors.brownPct > 5){
-          // Moderate browning
-          diagnosis = PEST_DB.find(p=>p.name==='Spider Mites');
-          reason = `Image shows ${colors.brownPct}% browning with ${colors.greenPct}% remaining green. Pattern suggests mite damage or environmental stress.`;
-          confidence = Math.min(60, 35 + colors.brownPct);
-        } else {
-          // Smart climate-based fallback — use environmental data to make best guess
-          const temp = fd.air?.temperature || 25;
-          const hum = fd.air?.humidity || 60;
-          if(hum > 65 && temp > 20){
-            diagnosis = PEST_DB.find(p=>p.name==='Downy Mildew') || PEST_DB.find(p=>p.name==='Early Blight');
-            reason = `Image shows mixed colour patterns (${colors.greenPct}% green, ${colors.brownPct}% brown, ${colors.yellowPct}% yellow). High humidity (${hum}%) and warm temperature (${temp}°C) in your area increase fungal disease risk.`;
-          } else if(temp > 30){
-            diagnosis = PEST_DB.find(p=>p.name==='Spider Mites') || PEST_DB.find(p=>p.name==='Whiteflies');
-            reason = `Image shows mixed colour patterns. High temperature (${temp}°C) favours pest activity like mites and whiteflies.`;
-          } else {
-            diagnosis = PEST_DB.find(p=>p.name==='Nutrient Deficiency') || PEST_DB.find(p=>p.name==='Aphids');
-            reason = `Image shows ${colors.greenPct}% green, ${colors.brownPct}% brown, ${colors.yellowPct}% yellow. Pattern may indicate early stress or nutrient issues.`;
-          }
-          confidence = Math.min(55, 30 + colors.brownPct + colors.yellowPct);
-        }
-
-        if(diagnosis){
-          // Show result with honest labelling
-          const pestObj = {
-            name: diagnosis.name,
-            scientific: diagnosis.scientific,
-            severity: diagnosis.severity,
-            desc: reason + ' ' + diagnosis.desc,
-            treatments: diagnosis.treatments,
-            isDisease: !!diagnosis.scientific
-          };
-          showPestResult(pestObj, confidence, false);
-          // Override badge to show this is image-analysis, not AI CNN
-          document.getElementById('pp-confidence-badge').textContent = confidence + '% CONFIDENCE · IMAGE ANALYSIS';
-          document.getElementById('pp-status-badge').textContent = 'ESTIMATED';
-          document.getElementById('pp-status-badge').style.cssText = 'font-size:10px;background:rgba(224,166,58,0.1);color:var(--saffron);border-color:rgba(224,166,58,0.2)';
-        } else {
-          // Truly inconclusive — be honest about it
-          document.getElementById('pp-loading-state').style.display='none';
-          document.getElementById('pp-result-state').style.display='block';
-          document.getElementById('pp-pest-icon').innerHTML='<i class="fas fa-question-circle" style="color:var(--saffron)"></i>';
-          document.getElementById('pp-pest-name').textContent='Inconclusive — Manual Check Needed';
-          document.getElementById('pp-pest-scientific').textContent='Image analysis could not determine a clear diagnosis';
-          document.getElementById('pp-pest-desc').textContent=reason + ' For accurate detection, configure a Roboflow or HuggingFace API key, or consult your local KVK/agricultural extension officer with this image.';
-          document.getElementById('pp-severity-badge').textContent='UNKNOWN'; document.getElementById('pp-severity-badge').className='badge-pill';
-          document.getElementById('pp-confidence-badge').textContent='LOW CONFIDENCE · IMAGE ANALYSIS';
-          document.getElementById('pp-status-badge').textContent='INCONCLUSIVE';
-          document.getElementById('pp-status-badge').style.cssText='font-size:10px;background:rgba(224,166,58,0.1);color:var(--saffron);border-color:rgba(224,166,58,0.2)';
-          document.getElementById('pp-treatment-list').innerHTML='<div style="color:var(--saffron);font-size:13px;line-height:1.8"><i class="fas fa-info-circle" style="margin-right:6px"></i>No AI model was reachable. The image colour analysis was inconclusive.<br><i class="fas fa-arrow-right" style="margin-right:6px;margin-top:4px;display:inline-block"></i>Add your free Roboflow key for accurate CNN-based detection.<br><i class="fas fa-arrow-right" style="margin-right:6px;margin-top:4px;display:inline-block"></i>Or take the photo to your nearest KVK / agriculture office.</div>';
-          showToast('Inconclusive — configure API key for accurate AI detection', true);
-        }
-      }
-    }catch(e){
-      console.warn('Image analysis error:', e);
-      document.getElementById('pp-loading-state').style.display='none';
-      document.getElementById('pp-idle-state').style.display='block';
-      showToast('Image analysis failed. Please try again.', true);
-    }
+    if (scanBeam) scanBeam.style.display = 'none';
+    document.getElementById('pp-loading-state').style.display = 'none';
+    document.getElementById('pp-result-state').style.display = 'block';
+    document.getElementById('pp-pest-icon').innerHTML = '<i class="fas fa-question-circle" style="color:var(--saffron)"></i>';
+    document.getElementById('pp-pest-name').textContent = 'No Pest / Disease Detected';
+    document.getElementById('pp-pest-scientific').textContent = 'Roboflow model found no clear symptoms';
+    document.getElementById('pp-pest-desc').textContent = 'The uploaded image did not match known pests in the database. Ensure good lighting and a clear close-up of the crop leaf.';
+    const sevBadge = document.getElementById('pp-severity-badge');
+    sevBadge.textContent = 'INCONCLUSIVE';
+    sevBadge.className = 'badge-pill';
+    document.getElementById('pp-confidence-badge').textContent = 'NO MATCH';
+    document.getElementById('pp-status-badge').textContent = 'RETAKE';
+    document.getElementById('pp-status-badge').style.cssText = 'font-size:10px;background:rgba(224,166,58,0.1);color:var(--saffron);border-color:rgba(224,166,58,0.2)';
+    document.getElementById('pp-treatment-list').innerHTML = '<div style="color:var(--text-mid);font-size:13px">Retake photo in clear natural daylight with a single crop leaf filling the frame.</div>';
+    showToast('No pest detected. Try another photo.', true);
   }
 }
 
