@@ -19,12 +19,18 @@ Thumbs.db
 
 # Environment and Secret files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+*.env
 *.pem
 *.key
+*.cert
+*.crt
+*.pfx
+.secrets
+credentials.json
+service-account*.json
+.railway/
 
 # Node & Package Manager files
 node_modules/

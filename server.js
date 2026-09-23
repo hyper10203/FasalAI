@@ -209,7 +209,11 @@ app.post('/api/pdx', async (req, res) => {
 
     // PEST & INSECT MODE: Roboflow API (Primary Model)
     if (mode === 'pest') {
-      const roboflowKey = process.env.ROBOFLOW_API_KEY || 'XCb25NxLnpNfA24YIaNo';
+      const roboflowKey = process.env.ROBOFLOW_API_KEY;
+      if (!roboflowKey) {
+        return res.status(200).json({ topK: [], source: 'unconfigured', message: 'ROBOFLOW_API_KEY not configured on server' });
+      }
+
       try {
         const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${roboflowKey}`;
         const rfResponse = await fetch(roboflowUrl, {
@@ -364,10 +368,21 @@ function getDefaultMspRates() {
 
 app.get('/api/market', async (req, res) => {
   const customKey = req.query.apiKey || req.headers['x-api-key'];
-  const apiKey = customKey || process.env.AGMARKNET_API_KEY || process.env.DATA_GOV_IN_API_KEY || '579b464db66ec23bdd00000112e16530575d42fb4dfe48ef42b367f0';
+  const apiKey = customKey || process.env.AGMARKNET_API_KEY || process.env.DATA_GOV_IN_API_KEY || '';
 
   if (!customKey && marketCache.data && (Date.now() - marketCache.lastFetched < CACHE_TTL_MS)) {
     return res.json(marketCache.data);
+  }
+
+  if (!apiKey) {
+    return res.json({
+      status: 'empty',
+      configured: false,
+      message: 'AGMARKNET_API_KEY not configured. Showing verified baseline.',
+      records: getBaselineMarketData(),
+      mspPrices: getDefaultMspRates(),
+      timestamp: new Date().toISOString()
+    });
   }
 
   try {

@@ -24,7 +24,10 @@ export default async function handler(req, res) {
     }
 
     // Roboflow Direct Model
-    const roboflowKey = process.env.ROBOFLOW_API_KEY || 'XCb25NxLnpNfA24YIaNo';
+    const roboflowKey = process.env.ROBOFLOW_API_KEY;
+    if (!roboflowKey) {
+      return res.status(500).json({ error: 'ROBOFLOW_API_KEY not configured in environment variables' });
+    }
     const roboflowUrl = `https://serverless.roboflow.com/soilscope/4?api_key=${roboflowKey}`;
     const rfResponse = await fetch(roboflowUrl, {
       method: 'POST',

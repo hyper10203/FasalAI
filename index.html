@@ -5279,7 +5279,7 @@ const MSP_DATA = [
   {crop:'Safflower',icon:'fa-star',mspQtl:5940,season:'Rabi',announced:'Oct 2024',market:null},
 ];
 
-const AGMARK_API_KEY = '579b464db66ec23bdd00000112e16530575d42fb4dfe48ef42b367f0';
+const AGMARK_API_KEY = localStorage.getItem('agmark_api_key') || '';
 
 async function fetchMSPUpdates(){
   try{
@@ -5381,7 +5381,7 @@ let nasaPowerData={};
    Replace ROBOFLOW_API_KEY with your free key from roboflow.com
    Fallback: smart climate-based detection from PEST_DB
    ───────────────────────────────────── */
-const ROBOFLOW_API_KEY = 'XCb25NxLnpNfA24YIaNo';
+const ROBOFLOW_API_KEY = localStorage.getItem('roboflow_api_key') || '';
 const ROBOFLOW_MODEL_URL = 'https://serverless.roboflow.com/aarav-narula/workflows/detect-and-classify-2';
 const ROBOFLOW_DIRECT_URL = 'https://serverless.roboflow.com/soilscope/4';
 // Secondary free model: Hugging Face plant-disease CNN (public, no auth needed)
@@ -7071,8 +7071,7 @@ function genLocalResponse(msg){
 }
 
 function saveHFToken(){
-  // Legacy function — now tokens are set directly in code
-  showToast('Token management: edit ROBOFLOW_API_KEY / HF_PLANT_KEY in index.html directly');
+  showToast('API keys are securely configured via .env / environment variables');
 }
 
 // Logo is hardcoded via images/logo.png — falls back to seedling icon if not found
@@ -7476,7 +7475,8 @@ async function pdxDetect(dataUrl, onStage){
 /* ── Roboflow Pest Detection pipeline ── */
 async function pdxDetectPestPatrol(dataUrl, onStage){
   const b64 = dataUrl.split(',')[1];
-  const apiKey = (typeof ROBOFLOW_API_KEY!=='undefined' && ROBOFLOW_API_KEY) ? ROBOFLOW_API_KEY : 'XCb25NxLnpNfA24YIaNo';
+  const apiKey = (typeof ROBOFLOW_API_KEY!=='undefined' && ROBOFLOW_API_KEY) ? ROBOFLOW_API_KEY : (localStorage.getItem('roboflow_api_key') || '');
+  if (!apiKey) return null;
 
   // 1. Direct Roboflow serverless SoilScope model
   try{
@@ -8097,26 +8097,24 @@ async function runPestDetection(){
 
   let detected = false;
 
-  // ── Roboflow Pest & Disease Model ──
-  const apiKey = (typeof ROBOFLOW_API_KEY !== 'undefined' && ROBOFLOW_API_KEY) ? ROBOFLOW_API_KEY : 'XCb25NxLnpNfA24YIaNo';
+  // ── 1. Backend Server Vision Pipeline (/api/pdx) ──
   try {
-    document.getElementById('pp-loading-text').textContent = 'Running Roboflow AI model…';
-    const directRes = await fetch('https://serverless.roboflow.com/soilscope/4?api_key=' + apiKey, {
+    document.getElementById('pp-loading-text').textContent = 'Analyzing with FasalAI vision model…';
+    const serverRes = await fetch('/api/pdx', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: b64,
-      signal: AbortSignal.timeout(25000)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: pestImageData, mode: 'pest' }),
+      signal: AbortSignal.timeout(20000)
     });
-    if (directRes.ok) {
-      const dData = await directRes.json();
-      clearInterval(lt);
-      if (scanBeam) scanBeam.style.display = 'none';
-      const preds = dData.predictions || [];
-      if (preds.length > 0) {
-        const top = preds.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
-        const label = top.class || '';
-        const confidence = Math.round((top.confidence || 0.75) * 100);
+    if (serverRes.ok) {
+      const sData = await serverRes.json();
+      if (sData && sData.topK && sData.topK.length > 0) {
+        const top = sData.topK[0];
+        const label = top.label || '';
+        const confidence = Math.round((top.score || 0.75) * 100);
         if (label) {
+          clearInterval(lt);
+          if (scanBeam) scanBeam.style.display = 'none';
           if (label.toLowerCase().includes('healthy')) {
             handleHealthyResult(confidence);
             detected = true;
@@ -8126,15 +8124,58 @@ async function runPestDetection(){
               showPestResult({ name: diseaseInfo.name, scientific: diseaseInfo.sci, severity: diseaseInfo.sev, desc: diseaseInfo.desc, treatments: diseaseInfo.treatments, isDisease: true }, confidence, true);
             } else {
               const cleanLabel = label.replace(/___/g, ' - ').replace(/_/g, ' ');
-              showPestResult({ name: cleanLabel, scientific: 'Roboflow Detection', severity: 'medium', desc: 'Roboflow detected: "' + cleanLabel + '" with ' + confidence + '% confidence. Manual inspection recommended.', treatments: ['Consult your local KVK or agricultural extension officer', 'Monitor the affected plant daily', 'Take close-up photos from multiple angles for confirmation'], isDisease: true }, confidence, true);
+              showPestResult({ name: cleanLabel, scientific: 'Vision AI Detection', severity: 'medium', desc: 'Detected: "' + cleanLabel + '" with ' + confidence + '% confidence.', treatments: ['Consult your local KVK or agricultural extension officer', 'Monitor the affected plant daily', 'Take close-up photos from multiple angles for confirmation'], isDisease: true }, confidence, true);
             }
             detected = true;
           }
+          return;
         }
       }
     }
   } catch (e) {
-    console.warn('Roboflow direct model failed:', e.message);
+    console.warn('Backend pest detection fallback:', e.message);
+  }
+
+  // ── 2. Direct Roboflow Client Fallback (if client key configured) ──
+  const apiKey = (typeof ROBOFLOW_API_KEY !== 'undefined' && ROBOFLOW_API_KEY) ? ROBOFLOW_API_KEY : (localStorage.getItem('roboflow_api_key') || '');
+  if (apiKey) {
+    try {
+      document.getElementById('pp-loading-text').textContent = 'Running Roboflow AI model…';
+      const directRes = await fetch('https://serverless.roboflow.com/soilscope/4?api_key=' + apiKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: b64,
+        signal: AbortSignal.timeout(25000)
+      });
+      if (directRes.ok) {
+        const dData = await directRes.json();
+        clearInterval(lt);
+        if (scanBeam) scanBeam.style.display = 'none';
+        const preds = dData.predictions || [];
+        if (preds.length > 0) {
+          const top = preds.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+          const label = top.class || '';
+          const confidence = Math.round((top.confidence || 0.75) * 100);
+          if (label) {
+            if (label.toLowerCase().includes('healthy')) {
+              handleHealthyResult(confidence);
+              detected = true;
+            } else {
+              const diseaseInfo = mapDiseaseLabel(label);
+              if (diseaseInfo) {
+                showPestResult({ name: diseaseInfo.name, scientific: diseaseInfo.sci, severity: diseaseInfo.sev, desc: diseaseInfo.desc, treatments: diseaseInfo.treatments, isDisease: true }, confidence, true);
+              } else {
+                const cleanLabel = label.replace(/___/g, ' - ').replace(/_/g, ' ');
+                showPestResult({ name: cleanLabel, scientific: 'Roboflow Detection', severity: 'medium', desc: 'Roboflow detected: "' + cleanLabel + '" with ' + confidence + '% confidence. Manual inspection recommended.', treatments: ['Consult your local KVK or agricultural extension officer', 'Monitor the affected plant daily', 'Take close-up photos from multiple angles for confirmation'], isDisease: true }, confidence, true);
+              }
+              detected = true;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Roboflow direct model failed:', e.message);
+    }
   }
 
   if (!detected) {

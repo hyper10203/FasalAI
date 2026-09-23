@@ -222,26 +222,31 @@ Then open **`http://127.0.0.1:5500`** 🎉
 > Open it over **`http://`**, not by double-clicking the file. Browsers block `localStorage` and Google sign-in on `file://` URLs.
 
 <details>
-<summary><b>🔑 Wiring up your own keys (optional)</b></summary>
+<summary><b>🔑 Environment Variables & API Keys Setup</b></summary>
 
 <br />
 
-The app ships with demo keys so it runs out of the box. To use your own, edit these constants in `index.html`:
+All sensitive credentials and API keys are stored securely in `.env` (for local development) or configured as environment variables on your hosting provider (Railway, Render, Docker). **Never commit raw API keys to Git or expose them in client-side code.**
 
-| What | Constant | Free key from |
+1. Copy the example configuration:
+   ```bash
+   cp .env.example .env
+   ```
+2. Fill in your keys in `.env`:
+
+| Service | Environment Variable | Where to get it |
 |:--|:--|:--|
-| Sage assistant | `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) |
-| Cloud fallback | `HF_PLANT_KEY` | [huggingface.co](https://huggingface.co/settings/tokens) |
-| Pest detection | `ROBOFLOW_API_KEY` | [roboflow.com](https://roboflow.com) |
-| Mandi prices | `AGMARK_API_KEY` | [data.gov.in](https://data.gov.in) |
-| Login + sync | `firebaseConfig` | [Firebase Console](https://console.firebase.google.com) |
+| Groq AI Assistant (LLaMA 3.1) | `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) |
+| Pest & Disease Detection (Roboflow) | `ROBOFLOW_API_KEY` | [roboflow.com](https://roboflow.com) |
+| Live Mandi Prices (Agmarknet) | `AGMARKNET_API_KEY` | [data.gov.in](https://data.gov.in) |
+| Vision Fallback (Hugging Face) | `HF_TOKEN` | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
 
-**For Google sign-in**, in Firebase Console → *Authentication*:
+**For Google Sign-in**, configure Firebase Console → *Authentication*:
 1. Enable **Google** and **Email/Password** under Sign-in method
 2. Add your domain under *Settings → Authorized domains*
 
-> [!CAUTION]
-> The bundled keys are **demo keys committed in client-side code**. Anyone with the file can read them. Swap in your own — and restrict them — before deploying anywhere public.
+> [!NOTE]
+> When deployed to Railway, set these in **Service → Variables**. FasalAI's backend proxy routes (`/api/chat`, `/api/pdx`, `/api/market`) securely access these variables without leaking secrets to the client.
 
 </details>
 
