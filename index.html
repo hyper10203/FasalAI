@@ -1000,18 +1000,6 @@ main{padding:28px 28px 48px}
   color:white;margin-left:auto;border-bottom-right-radius:4px;max-width:76%;
   box-shadow:0 3px 12px rgba(60,125,44,0.25);
 }
-.chat-quick-prompts{
-  display:flex;gap:8px;padding:8px 16px;background:rgba(0,0,0,0.14);overflow-x:auto;white-space:nowrap;border-top:1px solid var(--border);scrollbar-width:none;
-}
-.chat-quick-prompts::-webkit-scrollbar{display:none}
-.quick-chip{
-  padding:5px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:20px;
-  font-size:12px;color:var(--text-mid);cursor:pointer;white-space:nowrap;transition:all 0.2s;
-  font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:5px;
-}
-.quick-chip:hover{
-  background:rgba(90,168,60,0.15);border-color:var(--green-500);color:var(--lime);transform:translateY(-1px);
-}
 .chat-input-row{
   padding:12px 16px;border-top:1px solid var(--border);
   display:flex;gap:8px;background:var(--card-bg);
@@ -3834,15 +3822,8 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
                 <div class="message ai-message">
                   <strong>🌱 Welcome to CropLens AI!</strong><br>
                   I am your Senior Agronomist and farming companion. I have access to your live soil, weather, and satellite vegetation indicators.<br><br>
-                  Ask me anything — such as complete crop cultivation guides, fertilizer NPK schedules, disease diagnosis, or smart irrigation!
+                  Ask me anything — such as crop cultivation guides, fertilizer NPK schedules, disease diagnosis, or smart irrigation!
                 </div>
-              </div>
-              <div class="chat-quick-prompts" id="chat-quick-prompts">
-                <button type="button" class="quick-chip" onclick="askQuickPrompt('Step by step how to grow onion?')">🧅 How to Grow Onion</button>
-                <button type="button" class="quick-chip" onclick="askQuickPrompt('Recommended NPK fertilizer schedule and dosages for wheat?')">🌾 Wheat Fertilizer Plan</button>
-                <button type="button" class="quick-chip" onclick="askQuickPrompt('How to identify and control tomato leaf curl and blight?')">🍅 Tomato Disease Guide</button>
-                <button type="button" class="quick-chip" onclick="askQuickPrompt('How should I schedule irrigation based on my current soil moisture?')">💧 Smart Irrigation</button>
-                <button type="button" class="quick-chip" onclick="askQuickPrompt('Best organic pesticides for aphids and sucking pests')">🌿 Organic Pest Spray</button>
               </div>
               <div class="chat-input-row">
                 <button class="voice-btn" id="voice-btn" title="Voice input"><i class="fas fa-microphone"></i></button>
@@ -7053,14 +7034,6 @@ function formatAIMarkdown(text){
   return html;
 }
 
-function askQuickPrompt(text){
-  const inp=document.getElementById('chat-input');
-  if(inp){
-    inp.value=text;
-    sendAIMessage();
-  }
-}
-
 async function sendAIMessage(){
   const inp=document.getElementById('chat-input');
   const msg=inp.value.trim();
@@ -7084,31 +7057,20 @@ async function sendAIMessage(){
       es: 'Respond ONLY in Spanish (Español). Do NOT use English.',
       fr: 'Respond ONLY in French (Français). Do NOT use English.'
     };
-    const systemMsg=`You are CropLens AI — Senior Agronomist and Chief Agricultural Expert at FasalAI. You serve as an authoritative, deeply practical, and trusted farming companion and agronomic advisor for farmers across India and South Asia.
+    const systemMsg=`You are CropLens AI — Senior Agronomist at FasalAI. You give concise, professional, field-ready agricultural advice for farmers.
 
-CORE IDENTITY & TONE:
-- Professional, practical, warm, and highly structured — like an experienced Krishi Vigyan Kendra (KVK) senior scientist / ICAR agronomist.
-- Treat every farmer with respect and dedication. Provide clear, field-tested, actionable guidance that maximizes yield and profitability while protecting soil and plant health.
-- NEVER sound like a generic robotic chatbot. NEVER give a single compressed paragraph of generic text.
-
-RESPONSE FORMATTING & STRUCTURE RULES:
-1. ALWAYS use clean, organized formatting with clear section headings (e.g. "### 1. Best Season & Sowing Window"), segregated bullet points ("•" or "-"), numbered steps, and bold key terms.
-2. For "how to grow / cultivation / schedule / step by step" queries:
-   - Provide comprehensive step-by-step guidance divided into segregated sections:
-     ### 1. Season, Climate & Sowing Window
-     ### 2. Soil Requirements & Land Preparation (mention FYM / compost dosages)
-     ### 3. High-Yielding Varieties (mention popular Indian / regional cultivars)
-     ### 4. Seed Rate & Seed Treatment (fungicide/bio-agent treatment)
-     ### 5. Sowing / Nursery & Transplanting Method (exact plant-to-plant & row-to-row spacing in cm)
-     ### 6. Fertilizer & Nutrient Management (Basal dose + Top dressing schedule with exact NPK/acre)
-     ### 7. Irrigation Schedule & Critical Stages
-     ### 8. Weed, Pest & Disease Control (both organic/neem oil options and targeted treatments with doses)
-     ### 9. Harvesting, Curing & Yield Expectations
-3. For pest, disease, or fertilizer queries:
-   - Clearly state diagnosis/need, recommended treatments (both organic/biological and chemical options), exact dosages per litre of water or per acre, and application timing.
-4. For quick or general questions:
-   - Provide a direct answer followed by structured bullet points of essential practical tips.
-5. If farm context data (soil pH, moisture, NPK, weather) is available below, integrate relevant numbers seamlessly into your recommendations.
+CORE GUIDELINES:
+1. NEVER output a single wall-of-text paragraph. ALWAYS use segregated bullet points with bold key terms for fast readability.
+2. KEEP ANSWERS CRISP & CONCISE (approx 150–250 words total). Avoid overly long dissertations, lengthy introductory fluff, or giant tables. Get straight to practical field actions.
+3. For "how to grow / step-by-step / cultivation" queries, provide 5 to 6 concise, segregated pointers:
+   - **1. Season & Soil:** Sowing window, ideal temperature, soil type & pH.
+   - **2. Seed & Spacing:** Seed rate per acre, row/plant spacing in cm.
+   - **3. Fertilizer Schedule (NPK):** Basal dose and top dressing per acre.
+   - **4. Irrigation:** Critical watering stages (avoid waterlogging).
+   - **5. Pest & Disease Protection:** Key pest/fungus and practical treatment with dosage.
+   - **6. Harvest & Yield:** Expected days to harvest and yield per acre.
+4. For specific or general questions, give a direct 1-line answer followed by 2–4 concise bulleted pointers.
+5. Provide exact practical numbers (kg/acre, ml/L water, cm spacing) without filler.
 
 LANGUAGE INSTRUCTION: ${langInstructions[clLang] || langInstructions.en}
 
