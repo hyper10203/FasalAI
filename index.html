@@ -2433,53 +2433,21 @@ body{
   width:240px;z-index:1001 !important;
 }
 
-/* ── CUSHIONING & MARGINS: sits safely below the floating nav at all times ── */
-.main-content{
-  margin-left:0 !important;
-  width:100% !important;
-  margin-top:clamp(86px, 11vh, 102px) !important;
-  padding-top:0 !important;
-  transition:margin-top 0.3s ease;
-}
+/* ── MAIN CONTENT sits below the top nav, full width ── */
+.main-content{margin-left:0 !important;width:100% !important;margin-top:94px;padding-top:0 !important}
 .main-content.expanded{margin-left:0 !important}
-
-/* Secondary header / utility bar: cushioned rounded pill, never overlapping */
+/* static, NOT sticky — a sticky second bar was swallowing each page's title */
 .topbar{
-  position:static;z-index:10;
-  width:min(calc(100% - 32px), 1400px);
-  max-width:1400px;
-  margin:0 auto 16px auto;
-  padding:10px clamp(14px, 2vw, 24px);
-  border-radius:var(--radius-pill);
-  background:rgba(26, 18, 11, 0.58) !important;
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(90,168,60,0.14) !important;
-  box-shadow:0 4px 20px rgba(8, 5, 2, 0.22);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  box-sizing:border-box;
-  transition:all 0.3s ease;
+  position:static;z-index:5;
+  background:rgba(23,16,10,0.6);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(90,168,60,0.1);
+  padding:14px 26px;
 }
-[data-theme="light"] .topbar{
-  background:rgba(255,253,248,0.82) !important;
-  border:1px solid var(--border) !important;
-  box-shadow:0 4px 16px rgba(74, 52, 31, 0.08);
-}
-main{
-  padding:10px clamp(14px, 2vw, 28px) 120px !important;
-  max-width:1400px;
-  margin:0 auto;
-}
-.page-header{
-  margin-bottom:22px;
-  padding-top:4px;
-}
+main{padding:26px 30px 120px !important;max-width:1400px;margin:0 auto}
 
-/* ── RESPONSIVE ADAPTATIONS ACROSS ALL WINDOW SIZES ── */
+/* ── RESPONSIVE SIDEBAR SCALING: shrinks proportionally with window ── */
 
-/* 1. Standard Laptops (1080px – 1279px) */
+/* Standard Laptops (1040px – 1279px) */
 @media(max-width:1279px) and (min-width:1040px){
   .sidebar{
     height:56px !important;
@@ -2496,21 +2464,20 @@ main{
   }
   .sidebar-link .sidebar-icon{font-size:14.5px}
   .sidebar-lang-btn{padding:6px 10px !important;font-size:12px}
-  .main-content{margin-top:86px !important}
-  .topbar{margin-bottom:14px;padding:8px 18px}
+  .main-content{margin-top:86px}
 }
 
-/* 2. Small Laptops & Tablets Landscape (880px – 1039px) */
+/* Small Laptops & Tablets Landscape (880px – 1039px) */
 @media(max-width:1039px) and (min-width:880px){
   .sidebar{
-    height:54px !important;
+    height:52px !important;
     padding:0 12px;
     gap:6px;
     top:10px !important;
     width:min(calc(100% - 24px), 1400px) !important;
   }
   .sidebar-logo-icon{width:30px;height:30px;min-width:30px}
-  .sidebar-logo-text{font-size:16.5px}
+  .sidebar-logo-text{font-size:16px}
   .sidebar-nav ul{gap:3px}
   .sidebar-link{
     padding:5px 8px !important;
@@ -2520,140 +2487,48 @@ main{
   .sidebar-link .sidebar-icon{font-size:13.5px}
   .sidebar-lang-btn{padding:5px 8px !important;font-size:11.5px}
   .sidebar-lang-text{max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .main-content{margin-top:82px !important}
-  .topbar{
-    width:min(calc(100% - 24px), 1400px);
-    margin-bottom:12px;
-    padding:7px 16px;
-  }
+  .main-content{margin-top:80px}
 }
 
-/* 3. Tablets Portrait & Half-Screen Windows (769px – 879px) */
+/* Tablets Portrait & Half-Screen Windows (769px – 879px) */
 @media(max-width:879px) and (min-width:769px){
   .sidebar{
-    height:50px !important;
+    height:48px !important;
     padding:0 10px;
-    gap:6px;
+    gap:5px;
     top:8px !important;
     width:min(calc(100% - 20px), 1400px) !important;
   }
   .sidebar-logo-icon{width:28px;height:28px;min-width:28px}
   .sidebar-logo-text{font-size:15px}
   .sidebar-nav ul{gap:2px}
-  /* Dynamic Smart Pill: Inactive tabs show icon; Active/Hovered tab shows icon + text */
+  /* Icon-only for inactive tabs; active/hovered shows text */
   .sidebar-link .sidebar-text{display:none !important}
   .sidebar-link.active .sidebar-text,
   .sidebar-link:hover .sidebar-text{
     display:inline-block !important;
-    margin-left:5px;
-    font-size:11.5px;
+    margin-left:4px;
+    font-size:11px;
     font-weight:600;
   }
   .sidebar-link{
-    padding:6px 9px !important;
+    padding:5px 8px !important;
     border-radius:var(--radius-pill) !important;
   }
-  .sidebar-link .sidebar-icon{font-size:14px}
+  .sidebar-link .sidebar-icon{font-size:13px}
   .sidebar-lang-btn{padding:5px 8px !important;font-size:11px}
   .sidebar-lang-text{display:none}
   .sidebar-lang-arrow{display:none}
   .sidebar-lang-btn::after{content:'🌐';font-size:13px}
-  .main-content{margin-top:76px !important}
-  .topbar{
-    width:min(calc(100% - 20px), 1400px);
-    margin-bottom:10px;
-    padding:6px 14px;
-  }
+  .main-content{margin-top:72px}
 }
 
-/* 4. Mobile Viewports (<= 768px) */
+/* Mobile (<= 768px): sidebar hidden, bottom dock active */
 @media(max-width:768px){
-  .sidebar{
-    display:none !important;
-    position:fixed !important;
-    inset:0 auto 0 0 !important;
-    top:0 !important;left:0 !important;bottom:0 !important;right:auto !important;
-    width:280px !important;max-width:85vw !important;height:100vh !important;
-    transform:translateX(-100%) !important;
-    flex-direction:column !important;
-    align-items:stretch !important;
-    justify-content:flex-start !important;
-    border-radius:0 !important;
-    border:none !important;
-    border-right:1px solid rgba(90,168,60,0.2) !important;
-    background:rgba(20,13,8,0.96) !important;
-    padding:24px 18px !important;
-    box-shadow:none !important;
-    animation:none !important;
-    z-index:9999 !important;
-    overflow-y:auto !important;
-    gap:16px !important;
-  }
-  .sidebar.mobile-open{
-    display:flex !important;
-    transform:translateX(0) !important;
-    box-shadow:10px 0 50px rgba(0,0,0,0.65) !important;
-  }
-  .sidebar .sidebar-top{
-    margin-bottom:12px !important;
-    padding-bottom:12px !important;
-    border-bottom:1px solid rgba(90,168,60,0.15) !important;
-  }
-  .sidebar .sidebar-nav{
-    display:block !important;
-    overflow-y:auto !important;
-  }
-  .sidebar .sidebar-nav ul{
-    flex-direction:column !important;
-    align-items:stretch !important;
-    width:100% !important;
-    gap:6px !important;
-  }
-  .sidebar .sidebar-item{width:100% !important}
-  .sidebar .sidebar-link{
-    width:100% !important;
-    display:flex !important;
-    justify-content:flex-start !important;
-    padding:11px 14px !important;
-    font-size:14px !important;
-    border-radius:var(--radius-sm) !important;
-  }
-  .sidebar .sidebar-link .sidebar-text{
-    display:inline !important;
-    opacity:1 !important;
-    width:auto !important;
-  }
-  .sidebar-bottom{
-    margin-top:auto !important;
-    padding-top:12px !important;
-    border-top:1px solid rgba(90,168,60,0.15) !important;
-    width:100% !important;
-  }
-  .sidebar-lang-btn{width:100% !important;justify-content:space-between}
-  .sidebar-lang-text,.sidebar-lang-arrow{display:inline !important}
-  .sidebar-lang-btn::after{content:none}
-
-  .main-content{
-    margin-top:0 !important;
-    padding-top:0 !important;
-  }
-  .topbar{
-    position:sticky !important;
-    top:0 !important;
-    z-index:100 !important;
-    width:100% !important;
-    margin:0 0 10px 0 !important;
-    border-radius:0 !important;
-    border-left:none !important;
-    border-right:none !important;
-    border-top:none !important;
-    padding:0 14px !important;
-    height:58px !important;
-    box-shadow:0 2px 14px rgba(10,6,2,0.15) !important;
-  }
-  main{
-    padding:14px 14px 110px !important;
-  }
+  .sidebar{display:none !important}
+  .main-content{margin-top:0 !important}
+  .topbar{top:0}
+  main{padding:16px 16px 110px !important}
 }
 
 /* User chip / icon buttons in topbar */
@@ -2773,10 +2648,9 @@ main{
     var(--bg);
 }
 [data-theme="light"] .sidebar{
-  background:rgba(255,253,248,0.88) !important;
-  border:1px solid var(--border) !important;
-  border-radius:var(--radius-pill) !important;
-  box-shadow:0 16px 40px rgba(74,52,31,0.12);
+  background:rgba(255,253,248,0.86) !important;
+  border-bottom:1px solid var(--border) !important;
+  box-shadow:0 4px 20px rgba(74,52,31,0.06);
 }
 [data-theme="light"] .sidebar-logo-text{color:var(--text-dark)}
 [data-theme="light"] .sidebar-link{color:var(--text-mid) !important}
@@ -2787,7 +2661,7 @@ main{
 [data-theme="light"] .sidebar-lang-btn{background:rgba(75,148,50,0.08) !important;border-color:var(--border) !important;color:var(--text-mid) !important}
 [data-theme="light"] .sidebar-lang-dropdown{background:var(--card-bg) !important;border-color:var(--border) !important}
 [data-theme="light"] .lang-opt{color:var(--text-mid)}
-[data-theme="light"] .topbar{background:rgba(255,253,248,0.82) !important;border:1px solid var(--border) !important;box-shadow:0 4px 16px rgba(74,52,31,0.08)}
+[data-theme="light"] .topbar{background:rgba(255,253,248,0.75);border-bottom:1px solid var(--border)}
 [data-theme="light"] .card{
   background:linear-gradient(160deg,rgba(255,253,248,0.96),rgba(248,240,228,0.92)) !important;
   border:1px solid var(--border) !important;box-shadow:var(--shadow-sm) !important;
