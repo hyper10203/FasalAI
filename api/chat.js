@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'GROQ_API_KEY not configured in environment variables' });
   }
 
-  const GROQ_PRIMARY_MODELS = ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+  const GROQ_PRIMARY_MODELS = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b'];
   const deprecatedModels = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'llama3-8b-8192', 'groq/compound-mini', 'groq/compound', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
 
   let requestedModel = req.body && req.body.model;

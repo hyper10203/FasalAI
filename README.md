@@ -236,7 +236,7 @@ All sensitive credentials and API keys are stored securely in `.env` (for local 
 
 | Service | Environment Variable | Where to get it |
 |:--|:--|:--|
-| Groq AI Assistant (LLaMA 3.1) | `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) |
+| Groq AI Assistant (GPT-OSS 120B) | `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) |
 | Pest & Disease Detection (Roboflow) | `ROBOFLOW_API_KEY` | [roboflow.com](https://roboflow.com) |
 | Live Mandi Prices (Agmarknet) | `AGMARKNET_API_KEY` | [data.gov.in](https://data.gov.in) |
 | Vision Fallback (Hugging Face) | `HF_TOKEN` | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |

@@ -68,7 +68,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ── 1. CHAT API (Groq AI with Multi-Model Redundancy) ──
-const GROQ_PRIMARY_MODELS = ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+const GROQ_PRIMARY_MODELS = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b'];
 
 app.post('/api/chat', async (req, res) => {
   const apiKey = process.env.GROQ_API_KEY;

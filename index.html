@@ -3407,7 +3407,7 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
     <div class="onboarding-slide" data-slide="4">
       <div class="ob-icon-wrap ob-glow-purple"><i class="fas fa-robot"></i></div>
       <h1 class="ob-title" data-i18n="ob_ai_title">CropLens AI Assistant</h1>
-      <p class="ob-desc" data-i18n="ob_ai_desc">Chat with an AI that knows your soil, weather, and crops. Ask questions in English, Hindi, or Punjabi — powered by Groq LLaMA.</p>
+      <p class="ob-desc" data-i18n="ob_ai_desc">Chat with an AI that knows your soil, weather, and crops. Ask questions in English, Hindi, or Punjabi — powered by Groq GPT-OSS 120B.</p>
       <div class="ob-dots" id="ob-dots-4"></div>
       <button class="ob-next-btn" onclick="onboardingNext()"><span data-i18n="ob_next">Next</span> <i class="fas fa-arrow-right"></i></button>
     </div>
@@ -3775,7 +3775,7 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
             <!-- AI Status Bar -->
             <div style="display:flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(90,168,60,0.06);border-bottom:1px solid var(--border)">
               <span style="width:7px;height:7px;border-radius:50%;background:var(--green-500);animation:livePulse 1.4s ease-in-out infinite;flex-shrink:0"></span>
-              <span style="font-size:12px;color:var(--text-mid)">CropLens AI — Powered by Groq (LLaMA 3.1-8B) &nbsp;·&nbsp; <span style="color:var(--green-500);font-weight:600">Free · Fast Inference</span></span>
+              <span style="font-size:12px;color:var(--text-mid)">CropLens AI — Powered by Groq (GPT-OSS 120B) &nbsp;·&nbsp; <span style="color:var(--green-500);font-weight:600">Ultra-Fast Inference</span></span>
               <select id="croplens-lang" onchange="localStorage.setItem('croplensLang',this.value)" style="margin-left:auto;font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text-mid);cursor:pointer;font-family:'Inter',sans-serif;max-width:130px">
                 <!-- Populated dynamically from LANGUAGES by JS -->
               </select>
@@ -4119,7 +4119,7 @@ const translations = {
     ob_pest_title:"AI Pest & Disease Detection",
     ob_pest_desc:"Upload a photo of your crop leaf and our CNN-powered AI will identify diseases and pests instantly, with treatment plans.",
     ob_ai_title:"CropLens AI Assistant",
-    ob_ai_desc:"Chat with an AI that knows your soil, weather, and crops. Ask questions in English, Hindi, or Punjabi — powered by Groq LLaMA.",
+    ob_ai_desc:"Chat with an AI that knows your soil, weather, and crops. Ask questions in English, Hindi, or Punjabi — powered by Groq GPT-OSS 120B.",
     ob_start_title:"You're All Set!",
     ob_start_desc:"Your farm intelligence dashboard is ready. Start exploring satellite data, get crop recommendations, and chat with CropLens AI.",
     ob_next:"Next",
@@ -6948,15 +6948,13 @@ function buildFarmContext(){
 }
 
 /* ─────────────────────────────────────
-   CHATBOT — Groq free API (LLaMA 3.1-8B)
-/* ─────────────────────────────────────
-   CHATBOT — Groq API / Serverless Proxy
+   CHATBOT — Groq API (GPT-OSS 120B)
    ───────────────────────────────────── */
 const GROQ_API_KEY = localStorage.getItem('groq_api_key') || '';
-const GROQ_MODELS = ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
+const GROQ_MODELS = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'];
 let storedModel = localStorage.getItem('groqModel');
-if (!GROQ_MODELS.includes(storedModel)) {
-  storedModel = GROQ_MODELS[0];
+if (storedModel !== 'openai/gpt-oss-120b') {
+  storedModel = 'openai/gpt-oss-120b';
   try { localStorage.setItem('groqModel', storedModel); } catch(e){}
 }
 let GROQ_MODEL = storedModel;
