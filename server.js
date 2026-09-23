@@ -82,7 +82,6 @@ app.post('/api/chat', async (req, res) => {
     requestedModel = GROQ_PRIMARY_MODELS[0];
   }
 
-  const maxTokens = Math.min(Math.max(req.body.max_tokens || 300, 100), 350);
   const modelsToTry = [requestedModel, ...GROQ_PRIMARY_MODELS.filter(m => m !== requestedModel)];
   let lastErrorData = null;
   let lastStatus = 500;
@@ -90,8 +89,7 @@ app.post('/api/chat', async (req, res) => {
   for (const model of modelsToTry) {
     const payload = {
       ...req.body,
-      model: model,
-      max_tokens: maxTokens
+      model: model
     };
 
     try {
