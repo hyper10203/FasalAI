@@ -2321,120 +2321,339 @@ body{
   background-attachment:fixed;
 }
 
-/* ── TOP NAV (was the left sidebar) ── */
+/* ── TOP NAV (floating dynamic island / pill) ── */
 @keyframes navFloat{
   0%,100%{transform:translateX(-50%) translateY(0)}
-  50%    {transform:translateX(-50%) translateY(8px)}
+  50%    {transform:translateX(-50%) translateY(4px)}
 }
 .sidebar{
-  inset:auto !important; top:14px !important; left:50% !important; right:auto !important; bottom:auto !important;
-  width:calc(100% - 40px) !important; max-width:1400px; height:64px !important;
-  flex-direction:row !important; align-items:center;
-  gap:8px; padding:0 18px;
-  background:rgba(34,24,14,0.78) !important;
-  backdrop-filter:blur(24px) saturate(1.2); -webkit-backdrop-filter:blur(24px) saturate(1.2);
-  border:1px solid rgba(143,212,78,0.20) !important;
+  position:fixed !important;
+  inset:auto !important;
+  top:clamp(10px, 1.6vh, 16px) !important;
+  left:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  transform:translateX(-50%);
+  width:min(calc(100% - 32px), 1400px) !important;
+  max-width:1400px;
+  height:60px !important;
+  flex-direction:row !important;
+  align-items:center;
+  justify-content:space-between;
+  gap:clamp(6px, 1vw, 12px);
+  padding:0 clamp(10px, 1.5vw, 20px);
+  background:rgba(30, 20, 12, 0.82) !important;
+  backdrop-filter:blur(24px) saturate(1.25);
+  -webkit-backdrop-filter:blur(24px) saturate(1.25);
+  border:1px solid rgba(143,212,78,0.22) !important;
   border-radius:var(--radius-pill) !important;
-  box-shadow:0 18px 46px rgba(8,5,2,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow:0 18px 46px rgba(8,5,2,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
   overflow:visible !important;
+  z-index:1000;
+  box-sizing:border-box;
   animation:navFloat 7s ease-in-out infinite;
+  transition:width 0.3s ease, height 0.3s ease, padding 0.3s ease, top 0.3s ease;
 }
 [data-theme="light"] .sidebar{
-  background:rgba(255,253,248,0.86) !important;
+  background:rgba(255,253,248,0.88) !important;
   border:1px solid var(--border) !important;
   box-shadow:0 16px 40px rgba(74,52,31,0.12);
 }
-.sidebar.collapsed{width:calc(100% - 40px) !important}
+.sidebar.collapsed{width:min(calc(100% - 32px), 1400px) !important}
 @media(prefers-reduced-motion:reduce){.sidebar{animation:none}}
+
 .sidebar-top{
-  padding:0 !important; border:none !important; gap:10px;
-  margin-right:8px; flex-shrink:0;
+  padding:0 !important; border:none !important; gap:8px;
+  margin-right:4px; flex-shrink:0; display:flex; align-items:center;
 }
-.sidebar-logo-icon{width:38px;height:38px;box-shadow:0 6px 20px var(--lime-glow)}
-.sidebar-logo-text{opacity:1 !important;width:auto !important;font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.sidebar-logo-icon{
+  width:36px;height:36px;min-width:36px;
+  box-shadow:0 6px 18px var(--lime-glow);
+  transition:all var(--speed);
+}
+.sidebar-logo-text{
+  opacity:1 !important;width:auto !important;
+  font-size:19px;font-weight:700;
+  font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em;
+  white-space:nowrap;
+}
 .sidebar.collapsed .sidebar-logo-text{opacity:1 !important;width:auto !important}
-.sidebar-nav{flex:1 !important;padding:0 !important;overflow:visible !important;display:flex;justify-content:center}
-.sidebar-nav ul{display:flex !important;flex-direction:row;gap:4px;align-items:center;flex-wrap:nowrap}
-.sidebar-item{margin:0 !important}
-.sidebar-link{
-  flex-direction:row;padding:9px 15px !important;border-radius:var(--radius-pill) !important;
-  font-size:13.5px;font-weight:500;gap:8px;color:var(--text-mid) !important;white-space:nowrap;
+
+.sidebar-nav{
+  flex:1 !important;padding:0 !important;overflow:visible !important;
+  display:flex;justify-content:center;min-width:0;
 }
-.sidebar-link .sidebar-text{opacity:1 !important;width:auto !important}
+.sidebar-nav ul{
+  display:flex !important;flex-direction:row;gap:clamp(2px, 0.4vw, 5px);
+  align-items:center;flex-wrap:nowrap;margin:0;padding:0;list-style:none;
+}
+.sidebar-item{margin:0 !important;flex-shrink:0}
+.sidebar-link{
+  display:inline-flex;align-items:center;flex-direction:row;
+  padding:7px clamp(8px, 0.9vw, 13px) !important;
+  border-radius:var(--radius-pill) !important;
+  font-size:13px;font-weight:500;gap:7px;
+  color:var(--text-mid) !important;white-space:nowrap;
+  transition:all 0.22s ease;
+  box-sizing:border-box;
+}
+.sidebar-link .sidebar-text{
+  opacity:1 !important;width:auto !important;
+  display:inline-block;
+  transition:all 0.22s ease;
+}
 .sidebar.collapsed .sidebar-link .sidebar-text{opacity:1 !important;width:auto !important}
 .sidebar-link::before{display:none !important}
-.sidebar-link:hover{background:rgba(90,168,60,0.12) !important;color:var(--text-dark) !important}
+.sidebar-link:hover{
+  background:rgba(90,168,60,0.14) !important;
+  color:var(--text-dark) !important;
+  transform:translateY(-1px);
+}
 .sidebar-link.active{
   background:linear-gradient(120deg,var(--violet),var(--magenta)) !important;
-  color:#fff !important;box-shadow:0 6px 20px rgba(224,166,58,0.35);
+  color:#fff !important;
+  box-shadow:0 6px 20px rgba(224,166,58,0.32);
 }
 .sidebar-link.active .sidebar-icon{color:#fff}
 .sidebar-bottom{
-  position:static !important;flex-direction:row;padding:0 !important;border:none !important;
-  gap:8px;flex-shrink:0;display:flex;align-items:center;
+  position:relative !important;flex-direction:row;padding:0 !important;border:none !important;
+  gap:6px;flex-shrink:0;display:flex;align-items:center;
 }
 .toggle-sidebar-btn{display:none !important}
-.sidebar-lang-btn{width:auto !important;padding:8px 12px !important;border-radius:var(--radius-pill) !important}
+.sidebar-lang-btn{
+  width:auto !important;padding:7px clamp(8px, 0.8vw, 12px) !important;
+  border-radius:var(--radius-pill) !important;
+  font-size:12.5px;
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
 .sidebar-lang-text,.sidebar-lang-arrow{opacity:1 !important;width:auto !important}
 .sidebar.collapsed .sidebar-lang-text{opacity:1 !important;width:auto !important}
-.sidebar-lang-dropdown{bottom:auto !important;top:calc(100% + 8px) !important;left:auto !important;right:0 !important;width:240px}
+.sidebar-lang-dropdown{
+  bottom:auto !important;top:calc(100% + 8px) !important;left:auto !important;right:0 !important;
+  width:240px;z-index:1001 !important;
+}
 
-/* ── MAIN CONTENT sits below the top nav, full width ── */
-.main-content{margin-left:0 !important;width:100% !important;margin-top:94px;padding-top:0 !important}
+/* ── CUSHIONING & MARGINS: sits safely below the floating nav at all times ── */
+.main-content{
+  margin-left:0 !important;
+  width:100% !important;
+  margin-top:clamp(86px, 11vh, 102px) !important;
+  padding-top:0 !important;
+  transition:margin-top 0.3s ease;
+}
 .main-content.expanded{margin-left:0 !important}
-/* static, NOT sticky — a sticky second bar was swallowing each page's title */
+
+/* Secondary header / utility bar: cushioned rounded pill, never overlapping */
 .topbar{
-  position:static;z-index:5;
-  background:rgba(23,16,10,0.6);backdrop-filter:blur(14px);
-  border-bottom:1px solid rgba(90,168,60,0.1);
-  padding:14px 26px;
+  position:static;z-index:10;
+  width:min(calc(100% - 32px), 1400px);
+  max-width:1400px;
+  margin:0 auto 16px auto;
+  padding:10px clamp(14px, 2vw, 24px);
+  border-radius:var(--radius-pill);
+  background:rgba(26, 18, 11, 0.58) !important;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(90,168,60,0.14) !important;
+  box-shadow:0 4px 20px rgba(8, 5, 2, 0.22);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-sizing:border-box;
+  transition:all 0.3s ease;
 }
-main{padding:26px 30px 120px !important;max-width:1400px;margin:0 auto}
-
-/* ── DE-BOX the cards: glassy panels with violet glow, no more uniform white boxes ── */
-.card{
-  background:linear-gradient(160deg,rgba(48,34,20,0.72),rgba(30,21,12,0.66)) !important;
-  border:1px solid rgba(90,168,60,0.16) !important;
-  border-radius:var(--radius-lg) !important;
-  backdrop-filter:blur(12px);
-  box-shadow:0 18px 46px rgba(10,6,2,0.5) !important;
+[data-theme="light"] .topbar{
+  background:rgba(255,253,248,0.82) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:0 4px 16px rgba(74, 52, 31, 0.08);
 }
-.card:hover{border-color:rgba(224,166,58,0.35) !important;box-shadow:0 24px 60px rgba(90,168,60,0.25) !important}
-.card-header{border-bottom:1px solid rgba(90,168,60,0.12)}
-.badge-pill{background:rgba(90,168,60,0.16);color:var(--green-300);border:1px solid rgba(90,168,60,0.3)}
-.badge-pill.saffron{background:rgba(224,166,58,0.14);color:var(--magenta);border-color:rgba(224,166,58,0.32)}
-.badge-pill.sky{background:rgba(87,179,154,0.14);color:var(--cyan);border-color:rgba(87,179,154,0.3)}
-
-/* Page header — huge gradient display type, left aligned differently */
-.page-header h1{
-  font-size:clamp(28px,4vw,44px);
-  background:linear-gradient(110deg,#fff 20%,var(--violet) 55%,var(--magenta)) !important;
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+main{
+  padding:10px clamp(14px, 2vw, 28px) 120px !important;
+  max-width:1400px;
+  margin:0 auto;
 }
-.page-header p{color:var(--text-mid)}
-
-/* Inputs dark */
-.form-control,.chat-input,.pdx-crop-search,.lang-search,.pdx-crop-btn{
-  background:rgba(90,168,60,0.06) !important;border-color:rgba(90,168,60,0.2) !important;color:var(--text-dark) !important;
+.page-header{
+  margin-bottom:22px;
+  padding-top:4px;
 }
 
-/* Bottom nav (mobile) — floating glass dock */
-.bottom-nav{
-  background:rgba(30,21,12,0.85) !important;backdrop-filter:blur(20px);
-  border:1px solid rgba(90,168,60,0.22) !important;border-radius:var(--radius-xl);
-  left:14px;right:14px;bottom:14px;width:auto;box-shadow:0 16px 40px rgba(10,6,2,0.6);
-}
-.bnav-item.active{color:var(--magenta)}
+/* ── RESPONSIVE ADAPTATIONS ACROSS ALL WINDOW SIZES ── */
 
-/* Hide the desktop top-nav on mobile; show bottom dock */
+/* 1. Standard Laptops (1080px – 1279px) */
+@media(max-width:1279px) and (min-width:1040px){
+  .sidebar{
+    height:56px !important;
+    padding:0 14px;
+    gap:8px;
+  }
+  .sidebar-logo-icon{width:33px;height:33px;min-width:33px}
+  .sidebar-logo-text{font-size:18px}
+  .sidebar-nav ul{gap:3px}
+  .sidebar-link{
+    padding:6px 9px !important;
+    font-size:12px !important;
+    gap:5px;
+  }
+  .sidebar-link .sidebar-icon{font-size:14.5px}
+  .sidebar-lang-btn{padding:6px 10px !important;font-size:12px}
+  .main-content{margin-top:86px !important}
+  .topbar{margin-bottom:14px;padding:8px 18px}
+}
+
+/* 2. Small Laptops & Tablets Landscape (880px – 1039px) */
+@media(max-width:1039px) and (min-width:880px){
+  .sidebar{
+    height:54px !important;
+    padding:0 12px;
+    gap:6px;
+    top:10px !important;
+    width:min(calc(100% - 24px), 1400px) !important;
+  }
+  .sidebar-logo-icon{width:30px;height:30px;min-width:30px}
+  .sidebar-logo-text{font-size:16.5px}
+  .sidebar-nav ul{gap:3px}
+  .sidebar-link{
+    padding:5px 8px !important;
+    font-size:11.4px !important;
+    gap:4px;
+  }
+  .sidebar-link .sidebar-icon{font-size:13.5px}
+  .sidebar-lang-btn{padding:5px 8px !important;font-size:11.5px}
+  .sidebar-lang-text{max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .main-content{margin-top:82px !important}
+  .topbar{
+    width:min(calc(100% - 24px), 1400px);
+    margin-bottom:12px;
+    padding:7px 16px;
+  }
+}
+
+/* 3. Tablets Portrait & Half-Screen Windows (769px – 879px) */
+@media(max-width:879px) and (min-width:769px){
+  .sidebar{
+    height:50px !important;
+    padding:0 10px;
+    gap:6px;
+    top:8px !important;
+    width:min(calc(100% - 20px), 1400px) !important;
+  }
+  .sidebar-logo-icon{width:28px;height:28px;min-width:28px}
+  .sidebar-logo-text{font-size:15px}
+  .sidebar-nav ul{gap:2px}
+  /* Dynamic Smart Pill: Inactive tabs show icon; Active/Hovered tab shows icon + text */
+  .sidebar-link .sidebar-text{display:none !important}
+  .sidebar-link.active .sidebar-text,
+  .sidebar-link:hover .sidebar-text{
+    display:inline-block !important;
+    margin-left:5px;
+    font-size:11.5px;
+    font-weight:600;
+  }
+  .sidebar-link{
+    padding:6px 9px !important;
+    border-radius:var(--radius-pill) !important;
+  }
+  .sidebar-link .sidebar-icon{font-size:14px}
+  .sidebar-lang-btn{padding:5px 8px !important;font-size:11px}
+  .sidebar-lang-text{display:none}
+  .sidebar-lang-arrow{display:none}
+  .sidebar-lang-btn::after{content:'🌐';font-size:13px}
+  .main-content{margin-top:76px !important}
+  .topbar{
+    width:min(calc(100% - 20px), 1400px);
+    margin-bottom:10px;
+    padding:6px 14px;
+  }
+}
+
+/* 4. Mobile Viewports (<= 768px) */
 @media(max-width:768px){
-  .sidebar{display:none !important}
-  .main-content{margin-top:0 !important}
-  .topbar{top:0}
-  main{padding:16px 16px 110px !important}
-}
-@media(min-width:769px){
-  .main-content{margin-top:0}
+  .sidebar{
+    display:none !important;
+    position:fixed !important;
+    inset:0 auto 0 0 !important;
+    top:0 !important;left:0 !important;bottom:0 !important;right:auto !important;
+    width:280px !important;max-width:85vw !important;height:100vh !important;
+    transform:translateX(-100%) !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    justify-content:flex-start !important;
+    border-radius:0 !important;
+    border:none !important;
+    border-right:1px solid rgba(90,168,60,0.2) !important;
+    background:rgba(20,13,8,0.96) !important;
+    padding:24px 18px !important;
+    box-shadow:none !important;
+    animation:none !important;
+    z-index:9999 !important;
+    overflow-y:auto !important;
+    gap:16px !important;
+  }
+  .sidebar.mobile-open{
+    display:flex !important;
+    transform:translateX(0) !important;
+    box-shadow:10px 0 50px rgba(0,0,0,0.65) !important;
+  }
+  .sidebar .sidebar-top{
+    margin-bottom:12px !important;
+    padding-bottom:12px !important;
+    border-bottom:1px solid rgba(90,168,60,0.15) !important;
+  }
+  .sidebar .sidebar-nav{
+    display:block !important;
+    overflow-y:auto !important;
+  }
+  .sidebar .sidebar-nav ul{
+    flex-direction:column !important;
+    align-items:stretch !important;
+    width:100% !important;
+    gap:6px !important;
+  }
+  .sidebar .sidebar-item{width:100% !important}
+  .sidebar .sidebar-link{
+    width:100% !important;
+    display:flex !important;
+    justify-content:flex-start !important;
+    padding:11px 14px !important;
+    font-size:14px !important;
+    border-radius:var(--radius-sm) !important;
+  }
+  .sidebar .sidebar-link .sidebar-text{
+    display:inline !important;
+    opacity:1 !important;
+    width:auto !important;
+  }
+  .sidebar-bottom{
+    margin-top:auto !important;
+    padding-top:12px !important;
+    border-top:1px solid rgba(90,168,60,0.15) !important;
+    width:100% !important;
+  }
+  .sidebar-lang-btn{width:100% !important;justify-content:space-between}
+  .sidebar-lang-text,.sidebar-lang-arrow{display:inline !important}
+  .sidebar-lang-btn::after{content:none}
+
+  .main-content{
+    margin-top:0 !important;
+    padding-top:0 !important;
+  }
+  .topbar{
+    position:sticky !important;
+    top:0 !important;
+    z-index:100 !important;
+    width:100% !important;
+    margin:0 0 10px 0 !important;
+    border-radius:0 !important;
+    border-left:none !important;
+    border-right:none !important;
+    border-top:none !important;
+    padding:0 14px !important;
+    height:58px !important;
+    box-shadow:0 2px 14px rgba(10,6,2,0.15) !important;
+  }
+  main{
+    padding:14px 14px 110px !important;
+  }
 }
 
 /* User chip / icon buttons in topbar */
@@ -2554,9 +2773,10 @@ main{padding:26px 30px 120px !important;max-width:1400px;margin:0 auto}
     var(--bg);
 }
 [data-theme="light"] .sidebar{
-  background:rgba(255,253,248,0.86) !important;
-  border-bottom:1px solid var(--border) !important;
-  box-shadow:0 4px 20px rgba(74,52,31,0.06);
+  background:rgba(255,253,248,0.88) !important;
+  border:1px solid var(--border) !important;
+  border-radius:var(--radius-pill) !important;
+  box-shadow:0 16px 40px rgba(74,52,31,0.12);
 }
 [data-theme="light"] .sidebar-logo-text{color:var(--text-dark)}
 [data-theme="light"] .sidebar-link{color:var(--text-mid) !important}
@@ -2567,7 +2787,7 @@ main{padding:26px 30px 120px !important;max-width:1400px;margin:0 auto}
 [data-theme="light"] .sidebar-lang-btn{background:rgba(75,148,50,0.08) !important;border-color:var(--border) !important;color:var(--text-mid) !important}
 [data-theme="light"] .sidebar-lang-dropdown{background:var(--card-bg) !important;border-color:var(--border) !important}
 [data-theme="light"] .lang-opt{color:var(--text-mid)}
-[data-theme="light"] .topbar{background:rgba(255,253,248,0.75);border-bottom:1px solid var(--border)}
+[data-theme="light"] .topbar{background:rgba(255,253,248,0.82) !important;border:1px solid var(--border) !important;box-shadow:0 4px 16px rgba(74,52,31,0.08)}
 [data-theme="light"] .card{
   background:linear-gradient(160deg,rgba(255,253,248,0.96),rgba(248,240,228,0.92)) !important;
   border:1px solid var(--border) !important;box-shadow:var(--shadow-sm) !important;
@@ -2952,8 +3172,6 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
   #dashboard > .stats-grid{flex-direction:row!important;flex-wrap:wrap;height:auto}
   #dashboard .stat-card{flex:1 1 220px;min-height:110px}
   #dashboard .map-wrap{height:420px}
-  .sidebar-link{padding:9px 12px!important;font-size:12.8px}
-  .sidebar-link .sidebar-icon{font-size:14px}
 }
 @media(max-width:900px){
   .sim-controls{grid-template-columns:1fr;gap:16px}
