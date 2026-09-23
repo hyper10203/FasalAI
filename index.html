@@ -2329,19 +2329,19 @@ body{
 .sidebar{
   position:fixed !important;
   inset:auto !important;
-  top:clamp(10px, 1.6vh, 16px) !important;
+  top:clamp(8px, 1.2vw, 16px) !important;
   left:50% !important;
   right:auto !important;
   bottom:auto !important;
   transform:translateX(-50%);
-  width:min(calc(100% - 32px), 1400px) !important;
+  width:min(calc(100% - clamp(16px, 2.5vw, 40px)), 1400px) !important;
   max-width:1400px;
-  height:60px !important;
+  height:clamp(46px, 5.2vw, 64px) !important;
   flex-direction:row !important;
   align-items:center;
   justify-content:space-between;
-  gap:clamp(6px, 1vw, 12px);
-  padding:0 clamp(10px, 1.5vw, 20px);
+  gap:clamp(4px, 0.6vw, 12px);
+  padding:0 clamp(8px, 1.2vw, 20px);
   background:rgba(30, 20, 12, 0.82) !important;
   backdrop-filter:blur(24px) saturate(1.25);
   -webkit-backdrop-filter:blur(24px) saturate(1.25);
@@ -2352,28 +2352,28 @@ body{
   z-index:1000;
   box-sizing:border-box;
   animation:navFloat 7s ease-in-out infinite;
-  transition:width 0.3s ease, height 0.3s ease, padding 0.3s ease, top 0.3s ease;
+  transition:all 0.25s ease;
 }
 [data-theme="light"] .sidebar{
   background:rgba(255,253,248,0.88) !important;
   border:1px solid var(--border) !important;
   box-shadow:0 16px 40px rgba(74,52,31,0.12);
 }
-.sidebar.collapsed{width:min(calc(100% - 32px), 1400px) !important}
+.sidebar.collapsed{width:min(calc(100% - clamp(16px, 2.5vw, 40px)), 1400px) !important}
 @media(prefers-reduced-motion:reduce){.sidebar{animation:none}}
 
 .sidebar-top{
-  padding:0 !important; border:none !important; gap:8px;
-  margin-right:4px; flex-shrink:0; display:flex; align-items:center;
+  padding:0 !important; border:none !important; gap:clamp(4px, 0.6vw, 10px);
+  margin-right:clamp(2px, 0.4vw, 8px); flex-shrink:0; display:flex; align-items:center;
 }
 .sidebar-logo-icon{
-  width:36px;height:36px;min-width:36px;
+  width:clamp(26px, 3vw, 38px);height:clamp(26px, 3vw, 38px);min-width:clamp(26px, 3vw, 38px);
   box-shadow:0 6px 18px var(--lime-glow);
   transition:all var(--speed);
 }
 .sidebar-logo-text{
   opacity:1 !important;width:auto !important;
-  font-size:19px;font-weight:700;
+  font-size:clamp(14px, 1.5vw, 20px);font-weight:700;
   font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em;
   white-space:nowrap;
 }
@@ -2384,15 +2384,15 @@ body{
   display:flex;justify-content:center;min-width:0;
 }
 .sidebar-nav ul{
-  display:flex !important;flex-direction:row;gap:clamp(2px, 0.4vw, 5px);
+  display:flex !important;flex-direction:row;gap:clamp(1px, 0.3vw, 5px);
   align-items:center;flex-wrap:nowrap;margin:0;padding:0;list-style:none;
 }
-.sidebar-item{margin:0 !important;flex-shrink:0}
+.sidebar-item{margin:0 !important;flex-shrink:1;min-width:0}
 .sidebar-link{
   display:inline-flex;align-items:center;flex-direction:row;
-  padding:7px clamp(8px, 0.9vw, 13px) !important;
+  padding:clamp(4px, 0.5vw, 8px) clamp(6px, 0.7vw, 15px) !important;
   border-radius:var(--radius-pill) !important;
-  font-size:13px;font-weight:500;gap:7px;
+  font-size:clamp(10.5px, 1.05vw, 13.5px);font-weight:500;gap:clamp(3px, 0.4vw, 8px);
   color:var(--text-mid) !important;white-space:nowrap;
   transition:all 0.22s ease;
   box-sizing:border-box;
@@ -2402,6 +2402,7 @@ body{
   display:inline-block;
   transition:all 0.22s ease;
 }
+.sidebar-link .sidebar-icon{font-size:clamp(12px, 1.2vw, 17px)}
 .sidebar.collapsed .sidebar-link .sidebar-text{opacity:1 !important;width:auto !important}
 .sidebar-link::before{display:none !important}
 .sidebar-link:hover{
@@ -2417,14 +2418,14 @@ body{
 .sidebar-link.active .sidebar-icon{color:#fff}
 .sidebar-bottom{
   position:relative !important;flex-direction:row;padding:0 !important;border:none !important;
-  gap:6px;flex-shrink:0;display:flex;align-items:center;
+  gap:clamp(4px, 0.4vw, 8px);flex-shrink:0;display:flex;align-items:center;
 }
 .toggle-sidebar-btn{display:none !important}
 .sidebar-lang-btn{
-  width:auto !important;padding:7px clamp(8px, 0.8vw, 12px) !important;
+  width:auto !important;padding:clamp(4px, 0.5vw, 8px) clamp(6px, 0.7vw, 12px) !important;
   border-radius:var(--radius-pill) !important;
-  font-size:12.5px;
-  display:flex;align-items:center;gap:6px;white-space:nowrap;
+  font-size:clamp(10px, 1vw, 12.5px);
+  display:flex;align-items:center;gap:clamp(3px, 0.3vw, 6px);white-space:nowrap;
 }
 .sidebar-lang-text,.sidebar-lang-arrow{opacity:1 !important;width:auto !important}
 .sidebar.collapsed .sidebar-lang-text{opacity:1 !important;width:auto !important}
@@ -2436,91 +2437,28 @@ body{
 /* ── MAIN CONTENT sits below the top nav, full width ── */
 .main-content{margin-left:0 !important;width:100% !important;margin-top:94px;padding-top:0 !important}
 .main-content.expanded{margin-left:0 !important}
-/* static, NOT sticky — a sticky second bar was swallowing each page's title */
+/* Topbar: sticky at page top, behind the floating sidebar */
 .topbar{
-  position:static;z-index:5;
+  position:sticky;top:0;z-index:5;
   background:rgba(23,16,10,0.6);backdrop-filter:blur(14px);
   border-bottom:1px solid rgba(90,168,60,0.1);
   padding:14px 26px;
 }
 main{padding:26px 30px 120px !important;max-width:1400px;margin:0 auto}
 
-/* ── RESPONSIVE SIDEBAR SCALING: shrinks proportionally with window ── */
-
-/* Standard Laptops (1040px – 1279px) */
-@media(max-width:1279px) and (min-width:1040px){
-  .sidebar{
-    height:56px !important;
-    padding:0 14px;
-    gap:8px;
-  }
-  .sidebar-logo-icon{width:33px;height:33px;min-width:33px}
-  .sidebar-logo-text{font-size:18px}
-  .sidebar-nav ul{gap:3px}
-  .sidebar-link{
-    padding:6px 9px !important;
-    font-size:12px !important;
-    gap:5px;
-  }
-  .sidebar-link .sidebar-icon{font-size:14.5px}
-  .sidebar-lang-btn{padding:6px 10px !important;font-size:12px}
-  .main-content{margin-top:86px}
-}
-
-/* Small Laptops & Tablets Landscape (880px – 1039px) */
-@media(max-width:1039px) and (min-width:880px){
-  .sidebar{
-    height:52px !important;
-    padding:0 12px;
-    gap:6px;
-    top:10px !important;
-    width:min(calc(100% - 24px), 1400px) !important;
-  }
-  .sidebar-logo-icon{width:30px;height:30px;min-width:30px}
-  .sidebar-logo-text{font-size:16px}
-  .sidebar-nav ul{gap:3px}
-  .sidebar-link{
-    padding:5px 8px !important;
-    font-size:11.4px !important;
-    gap:4px;
-  }
-  .sidebar-link .sidebar-icon{font-size:13.5px}
-  .sidebar-lang-btn{padding:5px 8px !important;font-size:11.5px}
-  .sidebar-lang-text{max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .main-content{margin-top:80px}
-}
-
-/* Tablets Portrait & Half-Screen Windows (769px – 879px) */
+/* At narrow widths (769–879px), hide nav text labels for inactive tabs to fit */
 @media(max-width:879px) and (min-width:769px){
-  .sidebar{
-    height:48px !important;
-    padding:0 10px;
-    gap:5px;
-    top:8px !important;
-    width:min(calc(100% - 20px), 1400px) !important;
-  }
-  .sidebar-logo-icon{width:28px;height:28px;min-width:28px}
-  .sidebar-logo-text{font-size:15px}
-  .sidebar-nav ul{gap:2px}
-  /* Icon-only for inactive tabs; active/hovered shows text */
   .sidebar-link .sidebar-text{display:none !important}
   .sidebar-link.active .sidebar-text,
   .sidebar-link:hover .sidebar-text{
     display:inline-block !important;
     margin-left:4px;
-    font-size:11px;
+    font-size:clamp(10px, 1vw, 11.5px);
     font-weight:600;
   }
-  .sidebar-link{
-    padding:5px 8px !important;
-    border-radius:var(--radius-pill) !important;
-  }
-  .sidebar-link .sidebar-icon{font-size:13px}
-  .sidebar-lang-btn{padding:5px 8px !important;font-size:11px}
   .sidebar-lang-text{display:none}
   .sidebar-lang-arrow{display:none}
-  .sidebar-lang-btn::after{content:'🌐';font-size:13px}
-  .main-content{margin-top:72px}
+  .sidebar-lang-btn::after{content:'🌐';font-size:clamp(11px, 1.1vw, 14px)}
 }
 
 /* Mobile (<= 768px): sidebar hidden, bottom dock active */
