@@ -67,24 +67,59 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ── 1. CHAT API (Groq LLaMA 3.1) ──
+// ── 1. CHAT API (Groq AI) ──
+const GROQ_PRIMARY_MODELS = ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'allam-2-7b'];
+
 app.post('/api/chat', async (req, res) => {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return res.status(400).json({ error: 'GROQ_API_KEY not configured on server' });
   }
 
+  // Sanitize requested model to ensure only active, working Groq models are called
+  const deprecatedModels = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'llama3-8b-8192', 'groq/compound-mini', 'groq/compound', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
+  let modelToUse = req.body && req.body.model;
+  if (!modelToUse || deprecatedModels.includes(modelToUse) || !GROQ_PRIMARY_MODELS.includes(modelToUse)) {
+    modelToUse = GROQ_PRIMARY_MODELS[0];
+  }
+
+  const payload = {
+    ...req.body,
+    model: modelToUse,
+    max_tokens: Math.max(req.body.max_tokens || 500, 500)
+  };
+
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    let response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    let data = await response.json();
+
+    // Fallback if model_not_found or 404
+    if (!response.ok && (data?.error?.code === 'model_not_found' || response.status === 404)) {
+      console.warn(`Groq model ${modelToUse} failed (${data?.error?.message}), falling back to ${GROQ_PRIMARY_MODELS[1]}`);
+      payload.model = GROQ_PRIMARY_MODELS[1];
+      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(payload)
+      });
+      data = await response.json();
+    }
+
+    if (!response.ok) {
+      console.error('Groq API Error Response:', response.status, data);
+    }
+
     return res.status(response.status).json(data);
   } catch (error) {
     console.error('Chat API Error:', error);

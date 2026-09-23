@@ -6953,8 +6953,13 @@ function buildFarmContext(){
    CHATBOT — Groq API / Serverless Proxy
    ───────────────────────────────────── */
 const GROQ_API_KEY = localStorage.getItem('groq_api_key') || '';
-const GROQ_MODELS = ['openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'llama-3.1-8b-instant'];
-let GROQ_MODEL = localStorage.getItem('groqModel') || GROQ_MODELS[0];
+const GROQ_MODELS = ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
+let storedModel = localStorage.getItem('groqModel');
+if (!GROQ_MODELS.includes(storedModel)) {
+  storedModel = GROQ_MODELS[0];
+  try { localStorage.setItem('groqModel', storedModel); } catch(e){}
+}
+let GROQ_MODEL = storedModel;
 
 async function sendAIMessage(){
   const inp=document.getElementById('chat-input');
@@ -6985,7 +6990,7 @@ LANGUAGE INSTRUCTION: ${langInstructions[clLang] || langInstructions.en}
 
 ${buildFarmContext()}`;
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),30000);
+    const timer=setTimeout(()=>controller.abort(),35000);
 
     let res;
     // 1. Try server proxy /api/chat
@@ -6996,32 +7001,44 @@ ${buildFarmContext()}`;
         body: JSON.stringify({
           model: GROQ_MODEL,
           messages: [{ role: 'system', content: systemMsg }, { role: 'user', content: msg }],
-          max_tokens: 300,
+          max_tokens: 500,
           temperature: 0.7
         }),
         signal: controller.signal
       });
-    } catch(e) {}
+    } catch(e) {
+      console.warn('/api/chat request failed:', e.message);
+    }
 
-    // 2. Direct client fallback if key provided
+    // 2. Direct client fallback if custom key provided
     if ((!res || !res.ok) && GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE') {
-      res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
-        body: JSON.stringify({
-          model: GROQ_MODEL,
-          messages: [{ role: 'system', content: systemMsg }, { role: 'user', content: msg }],
-          max_tokens: 300,
-          temperature: 0.7
-        }),
-        signal: controller.signal
-      });
+      try {
+        res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+          body: JSON.stringify({
+            model: GROQ_MODEL,
+            messages: [{ role: 'system', content: systemMsg }, { role: 'user', content: msg }],
+            max_tokens: 500,
+            temperature: 0.7
+          }),
+          signal: controller.signal
+        });
+      } catch(e) {
+        console.warn('Direct Groq fallback failed:', e.message);
+      }
     }
 
     clearTimeout(timer);
     if(typing.parentNode) typing.remove();
 
     if(!res || !res.ok){
+      if (res) {
+        try {
+          const errData = await res.json();
+          console.warn('Groq returned non-ok status:', res.status, errData);
+        } catch(e){}
+      }
       // Fallback to local response
       const la=document.createElement('div'); la.className='message ai-message';
       la.textContent=genLocalResponse(msg);
@@ -7029,7 +7046,8 @@ ${buildFarmContext()}`;
       return;
     }
     const data=await res.json();
-    const reply=(data.choices?.[0]?.message?.content||'No response').trim();
+    const rawReply = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning || '';
+    const reply = (rawReply || 'No response').trim();
     const am=document.createElement('div');
     am.className='message ai-message'; am.textContent=reply;
     box.appendChild(am); box.scrollTop=box.scrollHeight;
