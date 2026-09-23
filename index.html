@@ -18,6 +18,9 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Marked.js (Markdown parsing for CropLens AI) -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>if (typeof marked === 'undefined') { document.write('<script src="assets/marked.min.js"><\/script>'); }</script>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -950,19 +953,64 @@ main{padding:28px 28px 48px}
 /* ── AI CHAT ── */
 .chat-shell{
   background:var(--bg);border-radius:var(--radius-sm);
-  height:480px;display:flex;flex-direction:column;overflow:hidden;
+  height:540px;display:flex;flex-direction:column;overflow:hidden;
 }
-.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
 .message{
-  padding:12px 16px;border-radius:12px;
-  max-width:78%;font-size:14px;line-height:1.6;
+  padding:14px 18px;border-radius:14px;
+  max-width:82%;font-size:14px;line-height:1.65;
   animation:msgIn 0.3s cubic-bezier(0.22,1,0.36,1);
+  word-break:break-word;
 }
 @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.ai-message{background:var(--card-bg);border:1px solid var(--border);color:var(--text-dark);border-bottom-left-radius:4px}
+.ai-message{
+  background:var(--card-bg);border:1px solid var(--border);color:var(--text-dark);
+  border-bottom-left-radius:4px;max-width:88%;box-shadow:var(--shadow-sm);
+}
+.ai-message p{margin:0 0 10px 0;line-height:1.65}
+.ai-message p:last-child{margin-bottom:0}
+.ai-message h1,.ai-message h2,.ai-message h3,.ai-message h4{
+  color:var(--lime);margin:14px 0 8px 0;font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1.35;
+}
+.ai-message h1{font-size:17px;border-bottom:1px solid rgba(143,212,78,0.25);padding-bottom:5px}
+.ai-message h2{font-size:16px;border-bottom:1px solid rgba(143,212,78,0.2);padding-bottom:4px}
+.ai-message h3{font-size:15px;color:var(--saffron-light)}
+.ai-message h4{font-size:14px;color:var(--text-dark)}
+.ai-message ul,.ai-message ol{margin:8px 0 12px 20px;padding:0}
+.ai-message li{margin-bottom:6px;line-height:1.55;color:var(--text-dark)}
+.ai-message li::marker{color:var(--green-400)}
+.ai-message strong{color:#fff;font-weight:700}
+[data-theme="light"] .ai-message strong{color:#14290f}
+[data-theme="light"] .ai-message h1,[data-theme="light"] .ai-message h2{color:var(--green-700)}
+[data-theme="light"] .ai-message h3{color:var(--saffron)}
+.ai-message table{
+  width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;border-radius:8px;overflow:hidden;border:1px solid var(--border);
+}
+.ai-message th,.ai-message td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.ai-message th{background:rgba(90,168,60,0.18);color:var(--lime);font-weight:600}
+[data-theme="light"] .ai-message th{background:rgba(90,168,60,0.1);color:var(--green-700)}
+.ai-message tr:nth-child(even){background:rgba(255,255,255,0.03)}
+.ai-message code{background:rgba(0,0,0,0.28);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--saffron-light);font-family:monospace}
+.ai-message pre{background:rgba(0,0,0,0.38);padding:10px 14px;border-radius:8px;overflow-x:auto;margin:8px 0}
+.ai-message pre code{background:transparent;padding:0}
+.ai-message blockquote{border-left:3px solid var(--green-500);margin:8px 0;padding:6px 14px;background:rgba(90,168,60,0.08);color:var(--text-mid);border-radius:0 8px 8px 0}
+.ai-message hr.ai-divider,.ai-message hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 .user-message{
   background:linear-gradient(135deg,var(--green-600),var(--green-500));
-  color:white;margin-left:auto;border-bottom-right-radius:4px;
+  color:white;margin-left:auto;border-bottom-right-radius:4px;max-width:76%;
+  box-shadow:0 3px 12px rgba(60,125,44,0.25);
+}
+.chat-quick-prompts{
+  display:flex;gap:8px;padding:8px 16px;background:rgba(0,0,0,0.14);overflow-x:auto;white-space:nowrap;border-top:1px solid var(--border);scrollbar-width:none;
+}
+.chat-quick-prompts::-webkit-scrollbar{display:none}
+.quick-chip{
+  padding:5px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:20px;
+  font-size:12px;color:var(--text-mid);cursor:pointer;white-space:nowrap;transition:all 0.2s;
+  font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:5px;
+}
+.quick-chip:hover{
+  background:rgba(90,168,60,0.15);border-color:var(--green-500);color:var(--lime);transform:translateY(-1px);
 }
 .chat-input-row{
   padding:12px 16px;border-top:1px solid var(--border);
@@ -3779,11 +3827,22 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
               <select id="croplens-lang" onchange="localStorage.setItem('croplensLang',this.value)" style="margin-left:auto;font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text-mid);cursor:pointer;font-family:'Inter',sans-serif;max-width:130px">
                 <!-- Populated dynamically from LANGUAGES by JS -->
               </select>
-              <button onclick="document.getElementById('chat-messages').innerHTML='&lt;div class=\'message ai-message\'&gt;Hello! I\'m CropLens AI. Ask me anything about your farm.&lt;/div&gt;'" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text-mid);cursor:pointer;font-family:'Inter',sans-serif"><i class="fas fa-trash-alt"></i> Clear</button>
+              <button onclick="document.getElementById('chat-messages').innerHTML='<div class=\'message ai-message\'><strong>🌱 CropLens AI Ready</strong><br>Ask me anything about your crops, soil health, fertilizer dosages, or pest management.</div>'" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text-mid);cursor:pointer;font-family:'Inter',sans-serif"><i class="fas fa-trash-alt"></i> Clear</button>
             </div>
             <div class="chat-shell">
               <div class="chat-messages" id="chat-messages">
-                <div class="message ai-message">Hello! I'm CropLens AI. I know your soil, weather, and crop data. Ask me anything — in English, Hindi, or Punjabi!</div>
+                <div class="message ai-message">
+                  <strong>🌱 Welcome to CropLens AI!</strong><br>
+                  I am your Senior Agronomist and farming companion. I have access to your live soil, weather, and satellite vegetation indicators.<br><br>
+                  Ask me anything — such as complete crop cultivation guides, fertilizer NPK schedules, disease diagnosis, or smart irrigation!
+                </div>
+              </div>
+              <div class="chat-quick-prompts" id="chat-quick-prompts">
+                <button type="button" class="quick-chip" onclick="askQuickPrompt('Step by step how to grow onion?')">🧅 How to Grow Onion</button>
+                <button type="button" class="quick-chip" onclick="askQuickPrompt('Recommended NPK fertilizer schedule and dosages for wheat?')">🌾 Wheat Fertilizer Plan</button>
+                <button type="button" class="quick-chip" onclick="askQuickPrompt('How to identify and control tomato leaf curl and blight?')">🍅 Tomato Disease Guide</button>
+                <button type="button" class="quick-chip" onclick="askQuickPrompt('How should I schedule irrigation based on my current soil moisture?')">💧 Smart Irrigation</button>
+                <button type="button" class="quick-chip" onclick="askQuickPrompt('Best organic pesticides for aphids and sucking pests')">🌿 Organic Pest Spray</button>
               </div>
               <div class="chat-input-row">
                 <button class="voice-btn" id="voice-btn" title="Voice input"><i class="fas fa-microphone"></i></button>
@@ -6959,6 +7018,49 @@ if (storedModel !== 'openai/gpt-oss-120b') {
 }
 let GROQ_MODEL = storedModel;
 
+// Markdown & quick prompt helper functions
+function formatAIMarkdown(text){
+  if(!text) return '';
+  // Strip harmful script tags
+  let clean = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  
+  if(window.marked && typeof window.marked.parse === 'function'){
+    try {
+      if(window.marked.setOptions){
+        window.marked.setOptions({ breaks: true, gfm: true });
+      }
+      return window.marked.parse(clean);
+    } catch(e){
+      console.warn('marked.parse failed, fallback to regex:', e);
+    }
+  }
+
+  // Regex-based fallback parser
+  let html = clean
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/^### (.*$)/gim, '<h4>$1</h4>')
+    .replace(/^## (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^# (.*$)/gim, '<h2>$1</h2>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^---$/gim, '<hr class="ai-divider">')
+    .replace(/^[\*\-\•]\s+(.*$)/gim, '<li>$1</li>')
+    .replace(/^\d+\.\s+(.*$)/gim, '<li>$1</li>')
+    .replace(/\n\n+/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+  return html;
+}
+
+function askQuickPrompt(text){
+  const inp=document.getElementById('chat-input');
+  if(inp){
+    inp.value=text;
+    sendAIMessage();
+  }
+}
+
 async function sendAIMessage(){
   const inp=document.getElementById('chat-input');
   const msg=inp.value.trim();
@@ -6982,13 +7084,37 @@ async function sendAIMessage(){
       es: 'Respond ONLY in Spanish (Español). Do NOT use English.',
       fr: 'Respond ONLY in French (Français). Do NOT use English.'
     };
-    const systemMsg=`You are CropLens AI — a concise, practical agricultural advisor for Indian and South Asian farmers. You have real-time farm data context. Always give actionable advice in 2-4 sentences. Mention specific numbers from the data.
+    const systemMsg=`You are CropLens AI — Senior Agronomist and Chief Agricultural Expert at FasalAI. You serve as an authoritative, deeply practical, and trusted farming companion and agronomic advisor for farmers across India and South Asia.
+
+CORE IDENTITY & TONE:
+- Professional, practical, warm, and highly structured — like an experienced Krishi Vigyan Kendra (KVK) senior scientist / ICAR agronomist.
+- Treat every farmer with respect and dedication. Provide clear, field-tested, actionable guidance that maximizes yield and profitability while protecting soil and plant health.
+- NEVER sound like a generic robotic chatbot. NEVER give a single compressed paragraph of generic text.
+
+RESPONSE FORMATTING & STRUCTURE RULES:
+1. ALWAYS use clean, organized formatting with clear section headings (e.g. "### 1. Best Season & Sowing Window"), segregated bullet points ("•" or "-"), numbered steps, and bold key terms.
+2. For "how to grow / cultivation / schedule / step by step" queries:
+   - Provide comprehensive step-by-step guidance divided into segregated sections:
+     ### 1. Season, Climate & Sowing Window
+     ### 2. Soil Requirements & Land Preparation (mention FYM / compost dosages)
+     ### 3. High-Yielding Varieties (mention popular Indian / regional cultivars)
+     ### 4. Seed Rate & Seed Treatment (fungicide/bio-agent treatment)
+     ### 5. Sowing / Nursery & Transplanting Method (exact plant-to-plant & row-to-row spacing in cm)
+     ### 6. Fertilizer & Nutrient Management (Basal dose + Top dressing schedule with exact NPK/acre)
+     ### 7. Irrigation Schedule & Critical Stages
+     ### 8. Weed, Pest & Disease Control (both organic/neem oil options and targeted treatments with doses)
+     ### 9. Harvesting, Curing & Yield Expectations
+3. For pest, disease, or fertilizer queries:
+   - Clearly state diagnosis/need, recommended treatments (both organic/biological and chemical options), exact dosages per litre of water or per acre, and application timing.
+4. For quick or general questions:
+   - Provide a direct answer followed by structured bullet points of essential practical tips.
+5. If farm context data (soil pH, moisture, NPK, weather) is available below, integrate relevant numbers seamlessly into your recommendations.
 
 LANGUAGE INSTRUCTION: ${langInstructions[clLang] || langInstructions.en}
 
 ${buildFarmContext()}`;
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),35000);
+    const timer=setTimeout(()=>controller.abort(),45000);
 
     let res;
     // 1. Try server proxy /api/chat
@@ -7037,7 +7163,7 @@ ${buildFarmContext()}`;
       }
       // Fallback to local response
       const la=document.createElement('div'); la.className='message ai-message';
-      la.textContent=genLocalResponse(msg);
+      la.innerHTML=formatAIMarkdown(genLocalResponse(msg));
       box.appendChild(la); box.scrollTop=box.scrollHeight;
       return;
     }
@@ -7045,7 +7171,7 @@ ${buildFarmContext()}`;
     const rawReply = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning || '';
     const reply = (rawReply || 'No response').trim();
     const am=document.createElement('div');
-    am.className='message ai-message'; am.textContent=reply;
+    am.className='message ai-message'; am.innerHTML=formatAIMarkdown(reply);
     box.appendChild(am); box.scrollTop=box.scrollHeight;
   }catch(err){
     if(typing.parentNode) typing.remove();
@@ -7053,9 +7179,9 @@ ${buildFarmContext()}`;
     const am=document.createElement('div');
     am.className='message ai-message';
     if(err.name==='AbortError'){
-      am.textContent='Response timed out. '+genLocalResponse(msg);
+      am.innerHTML=formatAIMarkdown('### ⏱️ Response Timed Out\nThe cloud AI inference took longer than expected. Here is your offline agronomic advisory:\n\n'+genLocalResponse(msg));
     } else {
-      am.textContent=genLocalResponse(msg);
+      am.innerHTML=formatAIMarkdown(genLocalResponse(msg));
     }
     box.appendChild(am); box.scrollTop=box.scrollHeight;
   }
@@ -7063,25 +7189,86 @@ ${buildFarmContext()}`;
 
 async function sendAIMessage_retry(msg,box){
   // Legacy stub — kept for compatibility
-  const am=document.createElement('div'); am.className='message ai-message'; am.textContent=genLocalResponse(msg);
+  const am=document.createElement('div'); am.className='message ai-message'; am.innerHTML=formatAIMarkdown(genLocalResponse(msg));
   box.appendChild(am); box.scrollTop=box.scrollHeight;
 }
 
 function genLocalResponse(msg){
   const m=msg.toLowerCase(); const fd=currentFarmData;
-  if(!fd||!fd.soil) return "Please set your farm location first — click 'My Location' or search the map. Then I can give precise advice based on your real soil and weather data.";
-  if(m.includes('soil')||m.includes('ph')||m.includes('nutrient')||m.includes('मिट्टी')||m.includes('ਮਿੱਟੀ')) return `Your soil pH is ${fd.soil.ph} (${fd.soil.ph<6.5?'slightly acidic':'within optimal range'}) with ${fd.soil.organicMatter}% organic matter. Moisture is ${fd.soil.moisture}% — ${fd.soil.moisture<30?'below optimal, irrigation recommended':'adequate'}. Nitrogen: ${fd.soil.nitrogen} mg/kg.`;
-  if(m.includes('water')||m.includes('irrigation')||m.includes('moisture')||m.includes('ਪਾਣੀ')||m.includes('पानी')) return `Water quality: ${fd.water.quality} — pH ${fd.water.ph}, TDS ${fd.water.tds} ppm. Soil moisture is ${fd.soil.moisture}%. ${fd.soil.moisture<25?'Irrigation urgently needed.':fd.soil.moisture<35?'Light irrigation recommended.':'Moisture levels are good.'}`;
-  if(m.includes('crop')||m.includes('plant')||m.includes('grow')||m.includes('ਫਸਲ')||m.includes('फसल')){
-    if(fd.crops&&fd.crops.length) return `For ${fd.region} (${fd.zoneName}), your top crop is ${fd.crops[0].name} at ${fd.crops[0].match}% compatibility. Also consider: ${fd.crops.slice(1,3).map(c=>c.name).join(', ')}. Basis: pH ${fd.soil.ph}, ${fd.air.temperature}°C, ${fd.soil.moisture}% moisture.`;
-    return 'Fetch satellite data first to get crop recommendations for your location.';
+  if(!fd||!fd.soil) return "### ⚠️ Farm Location Required\nPlease select or search your farm location on the map first. This allows CropLens AI to analyze real-time satellite indices, soil chemistry, and micro-climate parameters for precise guidance.";
+  
+  if(m.includes('soil')||m.includes('ph')||m.includes('nutrient')||m.includes('मिट्टी')||m.includes('ਮਿੱਟੀ')) {
+    return `### 🌱 Soil Health Assessment
+- **Soil pH:** ${fd.soil.ph} (${fd.soil.ph<6.5?'Slightly acidic — consider agricultural lime or wood ash':'Within optimal neutral range 6.0–7.5'})
+- **Organic Matter:** ${fd.soil.organicMatter}% (${fd.soil.organicMatter<1.5?'Low — incorporate 4–5 tonnes/acre well-rotted FYM':'Adequate'})
+- **Soil Moisture:** ${fd.soil.moisture}% (${fd.soil.moisture<30?'Below optimal — irrigation recommended':'Adequate root-zone moisture'})
+- **Available Nitrogen:** ${fd.soil.nitrogen} mg/kg
+- **Soil Texture:** ${fd.soil.type || 'Loamy'}`;
   }
-  if(m.includes('weather')||m.includes('temperature')||m.includes('climate')||m.includes('ਮੌਸਮ')||m.includes('मौसम')) return `${fd.region} conditions: ${fd.air.temperature}°C, ${fd.air.humidity}% humidity, AQI ${fd.air.aqi}, wind ${fd.air.windSpeed} m/s. NDVI ${fd.ndvi.ndvi} indicates ${fd.ndvi.vegetationHealth.toLowerCase()} vegetation cover.`;
-  if(m.includes('pest')||m.includes('disease')||m.includes('insect')||m.includes('ਕੀਟ')||m.includes('कीट')) return `Pest risk in ${fd.region}: ${fd.air.temperature>28&&fd.air.humidity>70?'HIGH — hot humid conditions strongly favour aphids, whiteflies, fungal disease':'MODERATE — monitor weekly'}. Use the Pest Patrol tool with a crop photo for precise AI diagnosis.`;
-  if(m.includes('fertilizer')||m.includes('खाद')||m.includes('ਖਾਦ')||m.includes('nitrogen')) return `With ${fd.soil.organicMatter}% organic matter and ${fd.soil.nitrogen} mg/kg nitrogen: ${fd.soil.organicMatter<2.5?'Add 4-6 tonnes FYM/ha + urea 50kg/ha.':fd.soil.nitrogen<30?'Apply 30kg N/ha split dose.':'Organic levels good — minimal supplementation needed.'} Consult your local KVK for soil-test-based fertilizer schedules.`;
-  if(m.includes('rabi')||m.includes('kharif')||m.includes('zaid')) return `Rabi (Oct-Mar): Wheat, Mustard, Chickpea, Barley — ideal for your ${fd.zoneName} climate with ${fd.air.temperature}°C temps. Kharif (Jun-Sep): Rice, Maize, Cotton, Soybean. Your soil pH ${fd.soil.ph} suits both seasons.`;
-  if(m.includes('price')||m.includes('market')||m.includes('bhav')||m.includes('ਭਾਅ')||m.includes('भाव')) return 'Check the Market Prices page for live Agmarknet-sourced wholesale rates. Prices refresh automatically with seasonal adjustments.';
-  return `I can advise on: soil health (pH ${fd.soil.ph}), crop selection, irrigation (moisture ${fd.soil.moisture}%), pest control, fertilizers, and market prices for ${fd.region}. What would you like to know?`;
+
+  if(m.includes('water')||m.includes('irrigation')||m.includes('moisture')||m.includes('ਪਾਣੀ')||m.includes('पानी')) {
+    return `### 💧 Irrigation & Water Quality Report
+- **Water Source pH:** ${fd.water.ph}
+- **Total Dissolved Solids (TDS):** ${fd.water.tds} ppm (${fd.water.tds>1000?'High salinity risk — use drip irrigation with filtration':'Safe for agricultural use'})
+- **Nitrate Content:** ${fd.water.nitrates} mg/L
+- **Water Quality Grade:** **${fd.water.quality}**
+- **Actionable Recommendation:** ${fd.soil.moisture<25?'Urgent deep irrigation required.':fd.soil.moisture<35?'Apply light surface or drip irrigation within 24 hours.':'Moisture levels are optimal; hold next irrigation cycle.'}`;
+  }
+
+  if(m.includes('crop')||m.includes('plant')||m.includes('grow')||m.includes('ਫਸਲ')||m.includes('फसल')){
+    if(fd.crops&&fd.crops.length) {
+      return `### 🌾 Top Compatible Crops for ${fd.region} (${fd.zoneName})
+- **Primary Match:** **${fd.crops[0].name}** (${fd.crops[0].match}% agronomic suitability)
+- **Secondary Options:** ${fd.crops.slice(1,3).map(c=>`**${c.name}** (${c.match}%)`).join(', ')}
+- **Key Determinants:** Soil pH ${fd.soil.ph}, ambient temp ${fd.air.temperature}°C, and moisture ${fd.soil.moisture}%.`;
+    }
+    return '### 🌾 Crop Recommendations\nPlease fetch live satellite and soil metrics on the Map page to generate site-specific crop compatibility rankings.';
+  }
+
+  if(m.includes('weather')||m.includes('temperature')||m.includes('climate')||m.includes('ਮੌਸਮ')||m.includes('मौसम')) {
+    return `### ⛅ Agro-Meteorological Conditions (${fd.region})
+- **Temperature:** ${fd.air.temperature}°C
+- **Relative Humidity:** ${fd.air.humidity}%
+- **Wind Speed:** ${fd.air.windSpeed} m/s
+- **Air Quality Index (AQI):** ${fd.air.aqi}
+- **Canopy Greenness (NDVI):** ${fd.ndvi.ndvi} (${fd.ndvi.vegetationHealth} vegetation index)`;
+  }
+
+  if(m.includes('pest')||m.includes('disease')||m.includes('insect')||m.includes('ਕੀਟ')||m.includes('कीट')) {
+    const isHigh=fd.air.temperature>28&&fd.air.humidity>70;
+    return `### 🛡️ Pest & Disease Alert (${fd.region})
+- **Risk Level:** **${isHigh?'HIGH RISK (Hot & Humid)':'MODERATE / NORMAL'}**
+- **Vulnerabilities:** ${isHigh?'Elevated humidity (>70%) strongly accelerates fungal spores (Blight, Mildew) and sap-sucking pests (Aphids, Thrips, Whiteflies).':'Maintain routine field scouting twice weekly.'}
+- **Proactive Management:** Spray Neem oil (10,000 ppm) @ 2–3 ml/L water as preventative repellent.
+- **Tip:** For instant visual diagnosis, upload a leaf photo to the **Plant Diagnosis** tab.`;
+  }
+
+  if(m.includes('fertilizer')||m.includes('खाद')||m.includes('ਖਾਦ')||m.includes('nitrogen')) {
+    return `### 🧪 Fertilizer & Nutrient Guidance
+- **Organic Matter:** ${fd.soil.organicMatter}% | **Available N:** ${fd.soil.nitrogen} mg/kg
+- **Recommendation:** ${fd.soil.organicMatter<2.0?'Apply 4–6 tonnes FYM/acre before sowing + 45 kg Urea/acre in split doses.':fd.soil.nitrogen<30?'Apply 30 kg N/acre in 2 equal split doses (at sowing and first irrigation).':'Soil organic levels are favorable; follow balanced NPK 4:2:1 ratio.'}
+- **Expert Tip:** Conduct soil sampling every season and apply micronutrients (Zinc, Boron) based on crop demand.`;
+  }
+
+  if(m.includes('rabi')||m.includes('kharif')||m.includes('zaid')) {
+    return `### 🗓️ Seasonal Cropping Windows (${fd.zoneName})
+- **Rabi (Oct–Mar):** Wheat, Mustard, Chickpea, Barley, Onion — optimal in ${fd.air.temperature}°C conditions.
+- **Kharif (Jun–Sep):** Rice, Maize, Cotton, Soybean, Pulses.
+- **Zaid (Mar–Jun):** Watermelon, Cucumber, Moong, Fodder crops.
+- **Soil Suitability:** pH ${fd.soil.ph} is suitable for diverse multi-cropping.`;
+  }
+
+  if(m.includes('price')||m.includes('market')||m.includes('bhav')||m.includes('ਭਾਅ')||m.includes('भाव')) {
+    return `### 💰 Market Rates & Procurement
+- Check the **Market Prices** section for live Agmarknet wholesale mandi prices.
+- Rates update dynamically with daily modal prices and seasonal arrivals.`;
+  }
+
+  return `### 🌾 CropLens AI Advisory
+I am your agronomic advisor for **${fd.region || 'your farm'}**.
+- Ask for a **step-by-step cultivation guide** for any crop (e.g. *"Step by step how to grow onion"*).
+- Ask for **NPK fertilizer dosages and application timing**.
+- Ask for **pest and disease treatment protocols**.`;
 }
 
 function saveHFToken(){
