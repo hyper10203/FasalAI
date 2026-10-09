@@ -3807,10 +3807,33 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
 
       <!-- ── RECOMMENDATIONS ── -->
       <section id="recommendations" class="page">
-        <div class="page-header">
-          <h1><span data-i18n="crop_recommendations">Crop Recommendations</span> <span class="badge-pill saffron" style="font-size:10px">AI ENHANCED</span></h1>
-          <p data-i18n="recommendations_description">Best crops for your farm based on current soil, water, and climate data</p>
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+          <div>
+            <h1><span data-i18n="crop_recommendations">Crop Recommendations</span> <span class="badge-pill saffron" style="font-size:10px">AI ENHANCED</span></h1>
+            <p data-i18n="recommendations_description">Best crops for your farm based on current soil, water, and climate data</p>
+          </div>
+          <button id="btn-fetch-ai-plan" class="map-btn primary" onclick="generateAICropPlan()" style="padding:10px 16px;font-size:12.5px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(224,166,58,0.25)">
+            <i class="fas fa-wand-magic-sparkles"></i> <span id="btn-fetch-ai-plan-text">Consult Sage AI</span>
+          </button>
         </div>
+
+        <!-- Sage AI Dynamic Advisory Card -->
+        <div id="ai-crop-advisory-card" class="card" style="margin-bottom:22px;border:1px solid rgba(224,166,58,0.3);background:linear-gradient(135deg,rgba(38,26,16,0.85),rgba(22,15,9,0.92))">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--saffron),#b8731b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px"><i class="fas fa-microchip"></i></div>
+              <div>
+                <div style="font-weight:600;font-size:14px;color:var(--text-dark)">Sage AI Agronomic Advisory</div>
+                <div style="font-size:11px;color:var(--text-light)">Synthesized from soil chemistry, live Open-Meteo satellite weather & APMC Mandi trends</div>
+              </div>
+            </div>
+            <span class="badge-pill" style="font-size:9.5px;background:rgba(224,166,58,0.15);color:var(--saffron)">GPT-OSS 120B</span>
+          </div>
+          <div class="card-body" id="ai-crop-content" style="padding:16px 20px;font-size:13.5px;line-height:1.68;color:var(--text-mid)">
+            Select a farm location on Pulse and tap <strong>Consult Sage AI</strong> to synthesize your field's live data into an intelligent crop recommendation and profit action plan.
+          </div>
+        </div>
+
         <div class="crop-rankings" id="crop-rankings">
           <div class="crop-rank-empty">
             <i class="fas fa-seedling"></i>
@@ -3972,12 +3995,14 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
                 <div id="pdx-adv-header"></div>
               </div>
               <div class="pdx-advice-tabs" id="pdx-advice-tabs">
-                <button class="pdx-advice-tab active" data-tab="treatment"><i class="fas fa-prescription-bottle-medical"></i> <span data-i18n="treatment">Treatment</span></button>
+                <button class="pdx-advice-tab active" data-tab="ai-rx"><i class="fas fa-wand-magic-sparkles"></i> <span>Sage AI Rx</span></button>
+                <button class="pdx-advice-tab" data-tab="treatment"><i class="fas fa-prescription-bottle-medical"></i> <span data-i18n="treatment">Treatment</span></button>
                 <button class="pdx-advice-tab" data-tab="nutrients"><i class="fas fa-flask"></i> <span data-i18n="nutrients">Nutrients</span></button>
                 <button class="pdx-advice-tab" data-tab="prevention"><i class="fas fa-shield-halved"></i> <span data-i18n="prevention">Prevention</span></button>
                 <button class="pdx-advice-tab" data-tab="pruning"><i class="fas fa-scissors"></i> <span data-i18n="pruning">Pruning</span></button>
               </div>
-              <div class="pdx-advice-panel active" data-panel="treatment" id="pdx-panel-treatment"></div>
+              <div class="pdx-advice-panel active" data-panel="ai-rx" id="pdx-panel-ai-rx"></div>
+              <div class="pdx-advice-panel" data-panel="treatment" id="pdx-panel-treatment"></div>
               <div class="pdx-advice-panel" data-panel="nutrients" id="pdx-panel-nutrients"></div>
               <div class="pdx-advice-panel" data-panel="prevention" id="pdx-panel-prevention"></div>
               <div class="pdx-advice-panel" data-panel="pruning" id="pdx-panel-pruning"></div>
@@ -7229,8 +7254,207 @@ ${buildFarmContext()}`;
   }
 }
 
+/* ══════════════════════════════════════════════════════════
+   SAGE AI SYSTEM INTEGRATION (Crop Planning & Clinical Rx)
+══════════════════════════════════════════════════════════ */
+async function callSageAI(messages, maxTokens = 1200){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45000);
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: GROQ_MODEL || 'openai/gpt-oss-120b',
+        messages: messages,
+        temperature: 0.65,
+        max_tokens: maxTokens
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if(res.ok){
+      const data = await res.json();
+      return (data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning || '').trim();
+    }
+  } catch(e) {
+    clearTimeout(timer);
+    console.warn('callSageAI /api/chat error:', e.message);
+  }
+
+  // Client-side fallback if user provided direct key
+  if (GROQ_API_KEY && GROQ_API_KEY !== 'YOUR_GROQ_API_KEY_HERE') {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+        body: JSON.stringify({
+          model: GROQ_MODEL || 'openai/gpt-oss-120b',
+          messages: messages,
+          temperature: 0.65,
+          max_tokens: maxTokens
+        })
+      });
+      if(res.ok){
+        const data = await res.json();
+        return (data.choices?.[0]?.message?.content || '').trim();
+      }
+    } catch(e) {
+      console.warn('callSageAI client direct fallback error:', e.message);
+    }
+  }
+  return '';
+}
+
+async function generateAICropPlan(){
+  const contentEl = document.getElementById('ai-crop-content');
+  const btnText = document.getElementById('btn-fetch-ai-plan-text');
+  if(!currentFarmData || !currentFarmData.soil){
+    showToast('Please set your farm location on Pulse first', true);
+    return;
+  }
+  if(btnText) btnText.textContent = 'Consulting…';
+  contentEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0">
+      <div class="spinner" style="width:24px;height:24px;border-width:2px;border-top-color:var(--saffron)"></div>
+      <div style="font-size:13px;color:var(--text-light)">Sage AI is evaluating your soil parameters, live Open-Meteo satellite weather, and APMC Mandi trends…</div>
+    </div>
+  `;
+
+  const fd = currentFarmData;
+  const prompt = `You are Sage AI, Chief Agronomist at FasalAI. Analyze this specific farm profile:
+- Farm Location: ${fd.region} (${currentLocation?.lat ? currentLocation.lat.toFixed(3) : ''}, ${currentLocation?.lng ? currentLocation.lng.toFixed(3) : ''})
+- Agro-Climatic Zone: ${fd.zoneName} (${fd.zone})
+- Live Environmental Weather: Temperature ${fd.air.temperature}°C, Humidity ${fd.air.humidity}%, Precipitation ${fd.air.precipitation || 0}mm, Wind ${fd.air.windSpeed} km/h
+- Soil Health Profile: pH ${fd.soil.ph}, Moisture ${fd.soil.moisture}%, Organic Matter ${fd.soil.organicMatter}%, Nitrogen ${fd.soil.nitrogen} mg/kg, Soil Type: ${fd.soil.type}
+- Current Month: ${new Date().toLocaleString('default', { month: 'long' })}
+- Season: ${locGen?.cropRecommender?.getCurrentSeason() || 'Kharif/Rabi'}
+
+Provide a structured, professional Agronomic Advisory:
+1. **Top 3 Recommended Crops**: For each crop, explain WHY it fits this exact soil chemistry, temperature, and season, and specify the optimal sowing window.
+2. **Economic & Yield Potential**: Expected yield range and market profitability insight based on current mandi dynamics.
+3. **Critical Management Advisory**: Immediate irrigation or fertilizer NPK adjustments for this soil type.
+
+Keep your response structured with clean bullet points and bold key terms. Be practical, authoritative, and concise.`;
+
+  const aiReply = await callSageAI([
+    { role: 'system', content: 'You are Sage AI, Chief Agronomist at FasalAI. You provide crisp, actionable, scientifically rigorous farming plans for Indian and global agriculture.' },
+    { role: 'user', content: prompt }
+  ], 1200);
+
+  if(btnText) btnText.textContent = 'Refresh Advisory';
+  if(aiReply){
+    const formatted = formatAIMarkdown(aiReply);
+    contentEl.innerHTML = `
+      <div class="ai-reply-text" style="line-height:1.7">${formatted}</div>
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(224,166,58,0.2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <span style="font-size:11.5px;color:var(--text-light)">Generated by Sage AI · GPT-OSS 120B Agronomic Engine</span>
+        <button class="map-btn" style="padding:6px 14px;font-size:12px;background:rgba(90,168,60,0.12);color:var(--green-500);border-color:rgba(90,168,60,0.3)" onclick="askSageAboutCropPlan('${fd.region}')">
+          <i class="fas fa-comment-dots"></i> Discuss in Sage AI Chat
+        </button>
+      </div>
+    `;
+  } else {
+    contentEl.innerHTML = `
+      <div style="color:var(--saffron);margin-bottom:8px"><i class="fas fa-triangle-exclamation"></i> Could not reach Sage AI server.</div>
+      <div style="font-size:12px;color:var(--text-light)">Please ensure your connection is active or test again in a few moments.</div>
+    `;
+  }
+}
+
+async function generateAIPrescription(advice){
+  const panel = document.getElementById('pdx-panel-ai-rx');
+  if(!panel) return;
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:28px 16px;justify-content:center">
+      <div class="spinner" style="width:26px;height:26px;border-width:2.5px;border-top-color:var(--green-500)"></div>
+      <div style="font-size:13px;color:var(--text-mid)">Consulting Sage AI for custom weather-adaptive clinical prescription…</div>
+    </div>
+  `;
+
+  const fd = (typeof currentFarmData !== 'undefined' && currentFarmData && currentFarmData.air) ? currentFarmData : null;
+  const weatherContext = fd ? `Current Farm Weather: ${fd.air.temperature}°C, ${fd.air.humidity}% Humidity, Rain ${fd.air.precipitation || 0}mm, Wind ${fd.air.windSpeed} km/h` : 'Weather: General field conditions';
+
+  const prompt = `You are Sage AI, Senior Plant Pathologist at FasalAI.
+The CNN Vision model has diagnosed a leaf scan:
+- Crop: ${advice.crop}
+- Diagnosis: ${advice.disease} (${advice.status})
+- Pathogen/Category: ${advice.scientific_name || advice.status}
+- ${weatherContext}
+
+${advice.status === 'healthy' ? 
+`Provide a 2-paragraph plant vigor and preventative maintenance guide:
+1. Preventative precautions for current weather to avoid fungal or bacterial outbreaks.
+2. Foliar booster or micronutrient recommendation to sustain peak photosynthesis.` :
+`Provide an immediate, clinical recovery plan tailored to current environmental conditions:
+1. **Immediate Emergency Action (0-48 hrs)**: Sanitation, infected leaf removal, isolation.
+2. **Targeted Chemical Treatment**: Name active ingredient (e.g. Azoxystrobin, Mancozeb, Chlorothalonil, Streptocycline), common brand example, and exact dosage per 15L knapsack sprayer.
+3. **Organic / Bio-Fungicide Alternative**: Neem oil dilution, Trichoderma viride or Bacillus subtilis application.
+4. **Weather-Adaptive Precautions**: Specific advice taking current humidity & temperature into account (e.g. spray timing, avoiding rain washout).`
+}
+
+Format in clean, structured bullet points with bold key terms. Keep it directly applicable and field-ready.`;
+
+  const aiReply = await callSageAI([
+    { role: 'system', content: 'You are Sage AI, Senior Plant Pathologist at FasalAI. You formulate precise, safe, highly effective agricultural prescriptions for diseased crops.' },
+    { role: 'user', content: prompt }
+  ], 1200);
+
+  if(aiReply){
+    const formatted = formatAIMarkdown(aiReply);
+    panel.innerHTML = `
+      <div style="background:rgba(90,168,60,0.06);border:1px solid rgba(90,168,60,0.2);border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(90,168,60,0.15)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px">🌿</span>
+            <strong style="color:var(--text-dark);font-size:13.5px">Sage AI Clinical Prescription</strong>
+          </div>
+          <span class="badge-pill" style="font-size:9.5px;background:rgba(90,168,60,0.15);color:var(--green-500)">WEATHER ADAPTIVE</span>
+        </div>
+        <div class="ai-reply-text" style="line-height:1.68;font-size:13px">${formatted}</div>
+        <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(90,168,60,0.12);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span style="font-size:11px;color:var(--text-light)">Calibrated for ${advice.crop} · ${advice.disease}</span>
+          <button class="map-btn" style="padding:5px 12px;font-size:11.5px;background:rgba(90,168,60,0.12);color:var(--green-500);border-color:rgba(90,168,60,0.25)" onclick="askSageAboutDiagnosis('${advice.disease}','${advice.crop}')">
+            <i class="fas fa-comments"></i> Ask Sage AI Follow-up
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    panel.innerHTML = `
+      <div style="padding:20px;text-align:center;color:var(--text-light)">
+        <p>AI Clinical Prescription unavailable at this moment.</p>
+        <button class="map-btn" style="padding:8px 14px;font-size:12px;margin-top:8px" onclick="generateAIPrescription(window._lastPdxAdvice)">
+          <i class="fas fa-rotate"></i> Retry Sage AI
+        </button>
+      </div>
+    `;
+  }
+}
+
+function askSageAboutDiagnosis(disease, crop){
+  const input = document.getElementById('chat-input');
+  if(input){
+    input.value = `I diagnosed ${disease} on my ${crop}. Can you provide a detailed step-by-step recovery schedule and spraying instructions?`;
+  }
+  const link = document.querySelector('[data-page="crop-lens"]');
+  if(link) link.click();
+  else if(typeof switchPage === 'function') switchPage('crop-lens');
+  setTimeout(()=>{ const ci=document.getElementById('chat-input'); if(ci) ci.focus(); }, 150);
+}
+
+function askSageAboutCropPlan(region){
+  const input = document.getElementById('chat-input');
+  if(input){
+    input.value = `Can you provide a detailed economic and agronomic breakdown of the best crops to plant in ${region} for this upcoming season?`;
+  }
+  const link = document.querySelector('[data-page="crop-lens"]');
+  if(link) link.click();
+  else if(typeof switchPage === 'function') switchPage('crop-lens');
+  setTimeout(()=>{ const ci=document.getElementById('chat-input'); if(ci) ci.focus(); }, 150);
+}
+
 async function sendAIMessage_retry(msg,box){
-  // Legacy stub — kept for compatibility
   const am=document.createElement('div'); am.className='message ai-message'; am.innerHTML=formatAIMarkdown(genLocalResponse(msg));
   box.appendChild(am); box.scrollTop=box.scrollHeight;
 }
@@ -7980,8 +8204,11 @@ function pdxRenderAdvice(a){
     <div class="pdx-nutri-cell"><div class="k">Frequency</div><div class="v">${pr.frequency||'—'}</div></div>
   </div>`;
 
-  // reset to first tab
-  pdxSwitchAdviceTab('treatment');
+  window._lastPdxAdvice = a;
+  // Trigger Sage AI Clinical Prescription
+  generateAIPrescription(a);
+  // Default to Sage AI Rx tab
+  pdxSwitchAdviceTab('ai-rx');
 }
 
 function pdxSwitchAdviceTab(tab){
