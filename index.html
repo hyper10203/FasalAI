@@ -3809,12 +3809,17 @@ input,select,textarea,button{font-size:16px}          /* stops iOS zoom-on-focus
       <section id="recommendations" class="page">
         <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
           <div>
-            <h1><span data-i18n="crop_recommendations">Crop Recommendations</span> <span class="badge-pill saffron" style="font-size:10px">AI ENHANCED</span></h1>
-            <p data-i18n="recommendations_description">Best crops for your farm based on current soil, water, and climate data</p>
+            <h1><span data-i18n="crop_recommendations">Crop Recommendations</span> <span class="badge-pill saffron" style="font-size:10px">AI POWERED</span></h1>
+            <p data-i18n="recommendations_description">Best crops for your farm powered by Sage AI, soil chemistry, and real-time climate</p>
           </div>
-          <button id="btn-fetch-ai-plan" class="map-btn primary" onclick="generateAICropPlan()" style="padding:10px 16px;font-size:12.5px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(224,166,58,0.25)">
-            <i class="fas fa-wand-magic-sparkles"></i> <span id="btn-fetch-ai-plan-text">Consult Sage AI</span>
-          </button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button id="btn-fetch-ai-crops" class="map-btn primary" onclick="fetchAICropRecommendations(true)" style="padding:10px 16px;font-size:12.5px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(224,166,58,0.25)">
+              <i class="fas fa-sparkles"></i> <span id="btn-fetch-ai-crops-text">Rank with Sage AI</span>
+            </button>
+            <button id="btn-fetch-ai-plan" class="map-btn" onclick="generateAICropPlan()" style="padding:10px 16px;font-size:12.5px;display:inline-flex;align-items:center;gap:8px">
+              <i class="fas fa-file-waveform"></i> <span id="btn-fetch-ai-plan-text">Agronomic Advisory</span>
+            </button>
+          </div>
         </div>
 
         <!-- Sage AI Dynamic Advisory Card -->
@@ -5968,6 +5973,11 @@ function navigateToPage(pageId){
     setTimeout(()=>{ updatePriceCards(); updatePriceTrendChart(); updateMarketShareChart(); renderMSPTable(); },40);
     setTimeout(()=>{ fetchLiveMarketPrices(); },150);
   }
+  if(pageId==='recommendations'){
+    if(typeof currentFarmData !== 'undefined' && currentFarmData && currentFarmData.soil && !currentFarmData.aiRanked){
+      setTimeout(()=>{ fetchAICropRecommendations(); }, 60);
+    }
+  }
   // Charts are created while their page is hidden (0-size) → force a re-measure once visible
   if(pageId==='analysis'){
     setTimeout(()=>{
@@ -6769,10 +6779,13 @@ async function fetchOpenMeteoWeather(lat,lng){
         currentFarmData.air.precipitation=c.precipitation;
         updateFarmDisplayValues();
         if(windChart) updateWindChart();
-        if(locGen && locGen.cropRecommender && locGen.cropDatabase){
+        if(!currentFarmData.aiRanked && locGen && locGen.cropRecommender && locGen.cropDatabase){
           currentFarmData.crops=locGen.cropRecommender.getOptimalCrops(locGen.cropDatabase,currentFarmData,currentFarmData.zone);
+          updateCarousel();
         }
-        updateCarousel();
+        if(!currentFarmData.aiRanked){
+          fetchAICropRecommendations();
+        }
       }
       document.getElementById('radar-toggle-btn').style.display='block';
     }
@@ -6840,6 +6853,8 @@ function generateFarmData(lat,lng,addr){
   }
   // Fetch real weather in background
   fetchOpenMeteoWeather(lat,lng);
+  // Auto-fetch Sage AI crop recommendations
+  fetchAICropRecommendations();
 }
 
 /* ── CHARTS ── */
@@ -6994,10 +7009,47 @@ function updateSatChart(){
   satelliteChart.update();
 }
 
-/* ── CROP RANKINGS RENDERER — PODIUM ── */
+/* ── CROP RANKINGS RENDERER — PODIUM & SAGE AI INTELLIGENCE ── */
+function makeCropSVG(name, type, icon) {
+  const colors = {
+    grain: ['#e2c974', '#9e7b28'],
+    oilseed: ['#ffe066', '#c68a10'],
+    legume: ['#c4df9b', '#5a8234'],
+    cash: ['#b8e994', '#2d6a4f'],
+    vegetable: ['#ffb7b2', '#c85a54'],
+    fruit: ['#ffd166', '#e07a5f'],
+    default: ['#57b39a', '#3c7d2c']
+  };
+  const pair = colors[type] || colors.default;
+  const emojiMap = {
+    wheat: '🌾', rice: '🌾', paddy: '🌾', maize: '🌽', corn: '🌽',
+    mustard: '🌼', soybean: '🌱', cotton: '☁️', sugarcane: '🎋',
+    chickpea: '🧆', gram: '🧆', onion: '🧅', garlic: '🧄',
+    potato: '🥔', tomato: '🍅', chilli: '🌶️', pepper: '🫑',
+    turmeric: '🌿', ginger: '🫚', groundnut: '🥜', peanut: '🥜',
+    millet: '🌾', bajra: '🌾', jowar: '🌾', barley: '🌾',
+    tea: '🍃', coffee: '☕', mango: '🥭', banana: '🍌', citrus: '🍋'
+  };
+  const lower = (name || '').toLowerCase();
+  let emoji = '🌱';
+  for (const [k, e] of Object.entries(emojiMap)) {
+    if (lower.includes(k)) { emoji = e; break; }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+    <defs><linearGradient id="bg_${Math.abs((name||'c').split('').reduce((a,b)=>((a<<5)-a)+b.charCodeAt(0),0))}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${pair[0]}"/>
+      <stop offset="100%" style="stop-color:${pair[1]}"/>
+    </linearGradient></defs>
+    <rect width="200" height="200" rx="24" fill="url(#bg_${Math.abs((name||'c').split('').reduce((a,b)=>((a<<5)-a)+b.charCodeAt(0),0))})"/>
+    <text x="100" y="115" text-anchor="middle" font-size="72">${emoji}</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+}
+
 function updateCarousel(){
   const container=document.getElementById('crop-rankings');
-  if(!currentFarmData.crops||!currentFarmData.crops.length){
+  if(!container) return;
+  if(!currentFarmData || !currentFarmData.crops || !currentFarmData.crops.length){
     container.innerHTML=`<div class="crop-rank-empty"><i class="fas fa-seedling"></i><h3>Set your location</h3><p>Tap "My Location" or search for your farm to get personalised crop recommendations.</p></div>`;
     return;
   }
@@ -7006,10 +7058,13 @@ function updateCarousel(){
   const medalEmoji=['🥇','🥈','🥉'];
 
   function makeImg(crop){
-    return crop.img?`<img src="${crop.img}" alt="${crop.name}">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(90,168,60,0.15),rgba(87,179,154,0.1));font-size:28px"><i class="fas ${crop.icon||'fa-seedling'}" style="color:var(--green-500)"></i></div>`;
+    if (crop.img) return `<img src="${crop.img}" alt="${crop.name}">`;
+    const svg = makeCropSVG(crop.name, crop.type, crop.icon);
+    return `<img src="${svg}" alt="${crop.name}">`;
   }
   function podiumCard(crop,i){
-    return `<div class="podium-card ${medalClasses[i]}" title="Tap to open the profit simulator" onclick="openFarmSim('${String(crop.name).replace(/'/g,"\\'")}')">
+    return `<div class="podium-card ${medalClasses[i]}" title="Tap to open the profit simulator" onclick="openFarmSim('${String(crop.name).replace(/'/g,"\\'")}')" style="position:relative">
+      ${crop.aiRanked ? `<span class="badge-pill" style="position:absolute;top:10px;right:10px;font-size:9.5px;background:rgba(90,168,60,0.18);color:var(--green-500);border:1px solid rgba(90,168,60,0.3)">AI PICK</span>` : ''}
       <div class="rank-badge">${i+1}</div>
       <div class="crop-img">${makeImg(crop)}</div>
       <div class="crop-rank-name">${crop.name}</div>
@@ -7021,9 +7076,55 @@ function updateCarousel(){
           <span><i class="fas fa-thermometer-half" style="color:var(--saffron);margin-right:4px"></i>${currentFarmData.air.temperature}°C</span>
           <span><i class="fas fa-tint" style="color:var(--sky);margin-right:4px"></i>${currentFarmData.soil.moisture}%</span>
         </div>
-        ${crop.type?`<div style="margin-top:8px"><span style="background:rgba(90,168,60,0.1);color:var(--green-600);padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;text-transform:uppercase">${crop.type}</span>${crop.maturity?` · <span style="color:var(--text-light);font-size:11px">~${crop.maturity}d</span>`:''}</div>`:''}
+        ${crop.sowingWindow ? `<div style="margin-top:6px;font-size:11px;color:var(--saffron);display:flex;align-items:center;gap:5px"><i class="fas fa-calendar-alt"></i><span>Sowing: <strong>${crop.sowingWindow}</strong></span></div>` : ''}
+        ${crop.profit ? `<div style="margin-top:3px;font-size:11px;color:var(--green-500);display:flex;align-items:center;gap:5px"><i class="fas fa-coins"></i><span>${crop.profit}</span></div>` : ''}
+        ${crop.type?`<div style="margin-top:8px"><span style="background:rgba(90,168,60,0.1);color:var(--green-600);padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;text-transform:uppercase">${crop.type}</span>${crop.maturity?` · <span style="color:var(--text-light);font-size:11px">~${crop.maturity}d</span>`:''} ${crop.yield ? ` · <span style="color:var(--text-light);font-size:11px">${crop.yield}</span>` : ''}</div>`:''}
       </div>
     </div>`;
+  }
+
+  // AI Status Banner
+  let aiBanner = '';
+  if (window._aiCropsLoading) {
+    aiBanner = `
+      <div class="ai-crops-banner" style="display:flex;align-items:center;justify-content:center;gap:12px;padding:14px 18px;background:rgba(224,166,58,0.08);border:1px dashed rgba(224,166,58,0.4);border-radius:14px;margin-bottom:20px;width:100%">
+        <div class="spinner" style="width:18px;height:18px;border-width:2.5px;border-top-color:var(--saffron)"></div>
+        <div style="font-size:13px;color:var(--saffron);font-weight:600">Sage AI is analyzing micro-climate, soil chemistry & ranking optimal crops for ${currentFarmData.region}…</div>
+      </div>
+    `;
+  } else if (currentFarmData.aiRanked) {
+    aiBanner = `
+      <div class="ai-crops-banner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:rgba(90,168,60,0.08);border:1px solid rgba(90,168,60,0.25);border-radius:14px;margin-bottom:20px;width:100%;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">✨</span>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <strong style="font-size:13.5px;color:var(--text-dark)">AI-Ranked for ${currentFarmData.region}</strong>
+              <span class="badge-pill" style="font-size:9.5px;background:rgba(90,168,60,0.18);color:var(--green-500)">SAGE AI · GPT-OSS 120B</span>
+            </div>
+            <div style="font-size:11.5px;color:var(--text-light);margin-top:2px">Calibrated for pH ${currentFarmData.soil.ph}, moisture ${currentFarmData.soil.moisture}%, temp ${currentFarmData.air.temperature}°C & current season</div>
+          </div>
+        </div>
+        <button class="map-btn" style="padding:6px 14px;font-size:12px;background:rgba(224,166,58,0.12);color:var(--saffron);border-color:rgba(224,166,58,0.3)" onclick="fetchAICropRecommendations(true)">
+          <i class="fas fa-rotate"></i> Refresh AI Rankings
+        </button>
+      </div>
+    `;
+  } else {
+    aiBanner = `
+      <div class="ai-crops-banner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:rgba(224,166,58,0.06);border:1px solid rgba(224,166,58,0.2);border-radius:14px;margin-bottom:20px;width:100%;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🌾</span>
+          <div>
+            <strong style="font-size:13.5px;color:var(--text-dark)">Baseline Agro-Ecological Picks for ${currentFarmData.region}</strong>
+            <div style="font-size:11.5px;color:var(--text-light);margin-top:2px">Upgrade with Sage AI to evaluate micro-climate, regional seed varieties, and mandi profit margins</div>
+          </div>
+        </div>
+        <button class="map-btn primary" style="padding:7px 16px;font-size:12px;display:inline-flex;align-items:center;gap:6px" onclick="fetchAICropRecommendations(true)">
+          <i class="fas fa-sparkles"></i> Rank with Sage AI
+        </button>
+      </div>
+    `;
   }
 
   // Build podium section with visual base
@@ -7053,13 +7154,15 @@ function updateCarousel(){
         <div class="other-info">
           <h5>${crop.name}</h5>
           <span>${crop.match}% <span data-i18n="match_label">Match</span></span>
+          ${crop.sowingWindow ? `<div style="font-size:10px;color:var(--saffron);margin-top:2px"><i class="fas fa-calendar-alt"></i> ${crop.sowingWindow}</div>` : ''}
+          ${crop.profit ? `<div style="font-size:10px;color:var(--green-500);margin-top:1px"><i class="fas fa-coins"></i> ${crop.profit}</div>` : ''}
         </div>
       </div>`;
     });
     othersHtml+='</div></div>';
   }
 
-  container.innerHTML=podiumHtml+othersHtml;
+  container.innerHTML=aiBanner+podiumHtml+othersHtml;
 }
 
 /* ── AI CHAT (HuggingFace Zephyr-7b-beta — no gating) ── */
@@ -7304,6 +7407,101 @@ async function callSageAI(messages, maxTokens = 1200){
     }
   }
   return '';
+}
+
+let _aiCropsLoading = false;
+
+async function fetchAICropRecommendations(force = false){
+  if(!currentFarmData || !currentFarmData.soil || !currentFarmData.air) return;
+  if(_aiCropsLoading) return;
+  if(currentFarmData.aiRanked && !force) return;
+
+  _aiCropsLoading = true;
+  const btn = document.getElementById('btn-fetch-ai-crops-text');
+  if(btn) btn.textContent = 'Ranking…';
+  updateCarousel();
+
+  const fd = currentFarmData;
+  const prompt = `You are Sage AI, Chief Agronomist and Senior Crop Scientist at FasalAI.
+Recommend the top 6 most suitable, agronomically sound, and profitable crops to cultivate for this specific farm:
+- Farm Location: ${fd.region} (${currentLocation?.lat ? currentLocation.lat.toFixed(3) : ''}, ${currentLocation?.lng ? currentLocation.lng.toFixed(3) : ''})
+- Agro-Climatic Zone: ${fd.zoneName} (${fd.zone})
+- Soil Chemistry: pH ${fd.soil.ph}, Moisture ${fd.soil.moisture}%, Organic Matter ${fd.soil.organicMatter || 2.5}%, Nitrogen ${fd.soil.nitrogen || 240} mg/kg, Soil Type: ${fd.soil.type}
+- Real-Time Weather: Temperature ${fd.air.temperature}°C, Humidity ${fd.air.humidity}%, Rain ${fd.air.precipitation || 0}mm, Wind ${fd.air.windSpeed} km/h
+- Current Month & Season: Month ${new Date().toLocaleString('default', { month: 'long' })}, Season: ${locGen?.cropRecommender?.getCurrentSeason() || 'summer'}
+
+Return ONLY a valid JSON array of exactly 6 crop objects, sorted in descending order of match percentage:
+[
+  {
+    "name": "Wheat (HD-3086 / DBW-187)",
+    "baseName": "Wheat",
+    "match": 95,
+    "reason": "Optimal for fertile alluvial soil with current cool night temperatures. Excellent disease resistance and winter cycle fit.",
+    "type": "grain",
+    "maturity": 120,
+    "yield": "48-52 q/ha",
+    "profit": "₹42,000/acre net margin",
+    "sowingWindow": "Oct 25 - Nov 15",
+    "icon": "fa-wheat-awn"
+  }
+]
+Guidelines:
+- "name": Crop name with top-yielding regional variety cultivated in ${fd.region}.
+- "baseName": Standard root crop name (Wheat, Rice, Mustard, Chickpea, Cotton, Sugarcane, Maize, Soybean, Potato, Tomato, Onion, Groundnut, Barley, Millets).
+- "match": High realistic match score (80-98).
+- "reason": 1-2 sentence precise scientific explanation linking soil pH, temperature, and season.
+- "type": "grain" | "oilseed" | "legume" | "cash" | "vegetable" | "fruit".
+- "maturity": days to maturity (number).
+- "yield": realistic expected yield range.
+- "profit": estimated net return per acre.
+- "sowingWindow": best sowing window.
+- "icon": FontAwesome icon name (e.g. "fa-wheat-awn", "fa-sun", "fa-seedling", "fa-leaf", "fa-circle").
+
+Output raw JSON array ONLY without any backticks, markdown fences or explanatory text.`;
+
+  try {
+    const aiReply = await callSageAI([
+      { role: 'system', content: 'You are Sage AI, Chief Agronomist at FasalAI. You output strictly valid JSON crop recommendation arrays.' },
+      { role: 'user', content: prompt }
+    ], 1400);
+
+    if(aiReply){
+      const jsonMatch = aiReply.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if(jsonMatch){
+        const parsed = JSON.parse(jsonMatch[0]);
+        if(Array.isArray(parsed) && parsed.length >= 3){
+          currentFarmData.crops = parsed.map(c => {
+            const name = c.name || c.crop || 'Crop';
+            const base = c.baseName || name.split(' ')[0] || 'Crop';
+            const dbCrop = (locGen && locGen.cropDatabase && (locGen.cropDatabase[base] || locGen.cropDatabase[name])) || {};
+            const matchPct = typeof c.match === 'number' ? c.match : (c.suitability === 'High' ? 94 : 86);
+            return {
+              name: name,
+              baseName: base,
+              match: Math.min(Math.max(Math.round(matchPct), 65), 98),
+              reason: c.reason || c.remarks || c.description || 'Optimal suitability for regional agro-climatic conditions.',
+              type: c.type || dbCrop.type || 'crop',
+              maturity: c.maturity || dbCrop.maturityDays || 120,
+              yield: c.yield || dbCrop.yieldPotential || 'High',
+              profit: c.profit || 'High profit margin',
+              sowingWindow: c.sowingWindow || 'Current Season',
+              icon: c.icon || dbCrop.icon || 'fa-seedling',
+              img: dbCrop.img || makeCropSVG(name, c.type, c.icon),
+              aiRanked: true
+            };
+          });
+          currentFarmData.aiRanked = true;
+        }
+      }
+    }
+  } catch(err) {
+    console.warn('fetchAICropRecommendations error:', err);
+  } finally {
+    _aiCropsLoading = false;
+    const btnEnd = document.getElementById('btn-fetch-ai-crops-text');
+    if(btnEnd) btnEnd.textContent = currentFarmData && currentFarmData.aiRanked ? 'Refresh AI Crops' : 'Rank with Sage AI';
+    updateCarousel();
+  }
 }
 
 async function generateAICropPlan(){
@@ -9187,7 +9385,8 @@ function openFarmSim(cropName){
   const crop = crops.find(c => c.name === cropName);
   if(!crop){ showToast('Set your farm location first to run the simulator', true); return; }
 
-  const econ = CROP_ECONOMICS[cropName] || SIM_DEFAULT;
+  const baseKey = Object.keys(CROP_ECONOMICS).find(k => cropName.toLowerCase().includes(k.toLowerCase())) || cropName;
+  const econ = CROP_ECONOMICS[cropName] || CROP_ECONOMICS[baseKey] || SIM_DEFAULT;
   simState = {crop, acres:2, investPct:50, econ};
 
   document.getElementById('sim-crop-name').textContent = crop.name;
@@ -9198,7 +9397,7 @@ function openFarmSim(cropName){
     '<i class="fas fa-bullseye"></i> ' + (crop.match||0) + '% match for your farm';
   document.getElementById('sim-crop-icon').innerHTML = crop.img
     ? `<img src="${crop.img}" alt="${crop.name}">`
-    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--green-500),var(--green-700));font-size:20px"><i class="fas ${crop.icon||'fa-seedling'}" style="color:#fff"></i></div>`;
+    : `<img src="${makeCropSVG(crop.name, crop.type, crop.icon)}" alt="${crop.name}">`;
 
   document.getElementById('sim-size').value = 2;
   document.getElementById('sim-invest').value = 50;
