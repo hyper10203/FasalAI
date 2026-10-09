@@ -5165,8 +5165,8 @@ class AdvancedCropRecommender {
     for(const p of preferred){ if(al.includes(p.toLowerCase())) return 1.0; }
     return 0.3;
   }
-  calcSeason(seasons,cur){ return seasons.includes(cur)?1.0:0.2; }
-  calcZone(zones,cur){ return zones.includes(cur)?1.0:0.3; }
+  calcSeason(seasons,cur){ return (seasons.includes(cur)||seasons.includes('year-round'))?1.0:0.3; }
+  calcZone(zones,cur){ return (zones.includes(cur)||zones.includes('all'))?1.0:0.4; }
   generateReason(cropName,cropData,farmData){
     const r=[];
     const ph=farmData.soil.ph;
@@ -5181,16 +5181,30 @@ class AdvancedCropRecommender {
     if(tmp<cropData.optimalTemp.min) r.push(`Temperature (${tmp}°C) below optimal`);
     else if(tmp>cropData.optimalTemp.max) r.push(`Temperature (${tmp}°C) above optimal`);
     else r.push(`Temperature (${tmp}°C) is optimal`);
-    if(!cropData.season.includes(this.getCurrentSeason())) r.push(`Consider greenhouse for off-season`);
     return r.join('. ');
   }
-  getOptimalCrops(cropDB,farmData,climateZone,limit=6){
+  getOptimalCrops(cropDB,farmData,climateZone,cityData=null,limit=6){
+    const topProduced = (cityData && cityData.topCrops) ? cityData.topCrops : [];
     const scored=[];
     for(const [name,data] of Object.entries(cropDB)){
-      const score=this.calculateCropScore(data,farmData,climateZone);
-      scored.push({name,match:score,reason:this.generateReason(name,data,farmData),emoji:data.emoji,type:data.type,maturity:data.maturityDays,yield:data.yieldPotential,icon:data.icon,img:data.img});
+      let score=this.calculateCropScore(data,farmData,climateZone);
+      const rankIdx = topProduced.findIndex(tc => tc.toLowerCase() === name.toLowerCase());
+      if(rankIdx !== -1){
+        score = Math.max(score, Math.min(99, 99 - (rankIdx * 2)));
+      }
+      scored.push({
+        name,
+        match:score,
+        reason: rankIdx !== -1 ? `Primary dominant staple/commercial crop of ${farmData.region} with strong regional output.` : this.generateReason(name,data,farmData),
+        emoji:data.emoji,
+        type:data.type,
+        maturity:data.maturityDays,
+        yield:data.yieldPotential,
+        icon:data.icon,
+        img:data.img
+      });
     }
-    return scored.sort((a,b)=>b.match-a.match).slice(0,limit).filter(c=>c.match>=60);
+    return scored.sort((a,b)=>b.match-a.match).slice(0,limit);
   }
 }
 
@@ -5203,55 +5217,55 @@ class CityBasedAgriculturalData {
   initCityDB(){
     return {
       // Indo-Gangetic Alluvial & Grain Belts
-      'Amritsar':{lat:31.634,lng:74.8723,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.5,4.5],moistureRange:[35,60],type:'alluvial soil'},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.3,0.9]},air:{aqiRange:[80,180],co2Range:[410,430],tempRange:[5,42]}},
-      'Ludhiana':{lat:30.901,lng:75.8573,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,200],co2Range:[412,432],tempRange:[6,40]}},
-      'Karnal':{lat:29.6857,lng:76.9905,climate:'fertile_plains',soil:{phRange:[6.8,7.9],organicRange:[2.2,4.2],moistureRange:[32,58],type:'alluvial soil'},water:{phRange:[7.0,7.5],tdsRange:[180,450],nitrateRange:[0.3,0.9]},air:{aqiRange:[90,190],co2Range:[411,432],tempRange:[7,42]}},
-      'Delhi':{lat:28.6139,lng:77.2090,climate:'sub_tropical',soil:{phRange:[6.8,8.0],organicRange:[1.0,2.5],moistureRange:[20,40],type:'sandy loam'},water:{phRange:[7.2,8.0],tdsRange:[300,800],nitrateRange:[0.5,1.5]},air:{aqiRange:[150,400],co2Range:[415,440],tempRange:[8,45]}},
-      'Lucknow':{lat:26.8467,lng:80.9462,climate:'fertile_plains',soil:{phRange:[6.5,7.6],organicRange:[1.8,3.8],moistureRange:[35,65],type:'alluvial soil'},water:{phRange:[6.9,7.5],tdsRange:[200,500],nitrateRange:[0.3,0.8]},air:{aqiRange:[100,220],co2Range:[412,435],tempRange:[8,44]}},
-      'Varanasi':{lat:25.3176,lng:82.9739,climate:'fertile_plains',soil:{phRange:[6.6,7.8],organicRange:[2.0,3.9],moistureRange:[38,68],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[220,520],nitrateRange:[0.3,0.8]},air:{aqiRange:[90,210],co2Range:[412,434],tempRange:[9,44]}},
-      'Patna':{lat:25.5941,lng:85.1376,climate:'fertile_plains',soil:{phRange:[6.4,7.5],organicRange:[2.2,4.0],moistureRange:[40,70],type:'alluvial soil'},water:{phRange:[6.8,7.4],tdsRange:[180,450],nitrateRange:[0.2,0.8]},air:{aqiRange:[110,240],co2Range:[413,436],tempRange:[10,43]}},
+      'Amritsar':{lat:31.634,lng:74.8723,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.5,4.5],moistureRange:[35,60],type:'alluvial soil'},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.3,0.9]},air:{aqiRange:[80,180],co2Range:[410,430],tempRange:[5,42]},topCrops:['Wheat','Rice','Mustard','Potato','Maize','Cotton']},
+      'Ludhiana':{lat:30.901,lng:75.8573,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,200],co2Range:[412,432],tempRange:[6,40]},topCrops:['Wheat','Rice','Mustard','Potato','Maize','Sugarcane']},
+      'Karnal':{lat:29.6857,lng:76.9905,climate:'fertile_plains',soil:{phRange:[6.8,7.9],organicRange:[2.2,4.2],moistureRange:[32,58],type:'alluvial soil'},water:{phRange:[7.0,7.5],tdsRange:[180,450],nitrateRange:[0.3,0.9]},air:{aqiRange:[90,190],co2Range:[411,432],tempRange:[7,42]},topCrops:['Rice','Wheat','Mustard','Sugarcane','Potato','Maize']},
+      'Delhi':{lat:28.6139,lng:77.2090,climate:'sub_tropical',soil:{phRange:[6.8,8.0],organicRange:[1.0,2.5],moistureRange:[20,40],type:'sandy loam'},water:{phRange:[7.2,8.0],tdsRange:[300,800],nitrateRange:[0.5,1.5]},air:{aqiRange:[150,400],co2Range:[415,440],tempRange:[8,45]},topCrops:['Wheat','Mustard','Vegetables','Rice','Bajra','Maize']},
+      'Lucknow':{lat:26.8467,lng:80.9462,climate:'fertile_plains',soil:{phRange:[6.5,7.6],organicRange:[1.8,3.8],moistureRange:[35,65],type:'alluvial soil'},water:{phRange:[6.9,7.5],tdsRange:[200,500],nitrateRange:[0.3,0.8]},air:{aqiRange:[100,220],co2Range:[412,435],tempRange:[8,44]},topCrops:['Wheat','Sugarcane','Rice','Potato','Mustard','Maize']},
+      'Varanasi':{lat:25.3176,lng:82.9739,climate:'fertile_plains',soil:{phRange:[6.6,7.8],organicRange:[2.0,3.9],moistureRange:[38,68],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[220,520],nitrateRange:[0.3,0.8]},air:{aqiRange:[90,210],co2Range:[412,434],tempRange:[9,44]},topCrops:['Rice','Wheat','Potato','Mustard','Maize','Sugarcane']},
+      'Patna':{lat:25.5941,lng:85.1376,climate:'fertile_plains',soil:{phRange:[6.4,7.5],organicRange:[2.2,4.0],moistureRange:[40,70],type:'alluvial soil'},water:{phRange:[6.8,7.4],tdsRange:[180,450],nitrateRange:[0.2,0.8]},air:{aqiRange:[110,240],co2Range:[413,436],tempRange:[10,43]},topCrops:['Rice','Wheat','Maize','Potato','Chickpea','Mustard']},
 
       // Central India & Deccan (Black Cotton Soil / Vertisols)
-      'Bhopal':{lat:23.2599,lng:77.4126,climate:'sub_tropical',soil:{phRange:[6.8,7.9],organicRange:[1.8,3.5],moistureRange:[25,50],type:'clay loam'},water:{phRange:[7.0,7.7],tdsRange:[220,550],nitrateRange:[0.3,0.9]},air:{aqiRange:[70,160],co2Range:[410,428],tempRange:[10,43]}},
-      'Indore':{lat:22.7196,lng:75.8577,climate:'sub_tropical',soil:{phRange:[7.0,8.1],organicRange:[2.0,3.6],moistureRange:[28,52],type:'clay loam'},water:{phRange:[7.1,7.8],tdsRange:[250,580],nitrateRange:[0.3,0.9]},air:{aqiRange:[75,170],co2Range:[410,430],tempRange:[11,43]}},
-      'Nagpur':{lat:21.1458,lng:79.0882,climate:'tropical',soil:{phRange:[6.8,8.0],organicRange:[1.8,3.5],moistureRange:[25,55],type:'clay loam'},water:{phRange:[7.0,7.7],tdsRange:[200,500],nitrateRange:[0.3,0.8]},air:{aqiRange:[70,160],co2Range:[410,428],tempRange:[12,46]}},
-      'Pune':{lat:18.5204,lng:73.8567,climate:'sub_tropical',soil:{phRange:[6.2,7.6],organicRange:[2.0,4.0],moistureRange:[30,55],type:'clay loam'},water:{phRange:[6.8,7.5],tdsRange:[150,450],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,130],co2Range:[408,425],tempRange:[12,38]}},
-      'Nashik':{lat:19.9975,lng:73.7898,climate:'sub_tropical',soil:{phRange:[6.2,7.5],organicRange:[2.2,4.2],moistureRange:[32,58],type:'clay loam'},water:{phRange:[6.8,7.4],tdsRange:[160,420],nitrateRange:[0.2,0.7]},air:{aqiRange:[50,120],co2Range:[408,424],tempRange:[10,39]}},
-      'Hyderabad':{lat:17.3850,lng:78.4867,climate:'sub_tropical',soil:{phRange:[6.0,7.5],organicRange:[1.5,3.5],moistureRange:[25,50],type:'sandy loam'},water:{phRange:[7.0,7.8],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[16,42]}},
+      'Bhopal':{lat:23.2599,lng:77.4126,climate:'sub_tropical',soil:{phRange:[6.8,7.9],organicRange:[1.8,3.5],moistureRange:[25,50],type:'clay loam'},water:{phRange:[7.0,7.7],tdsRange:[220,550],nitrateRange:[0.3,0.9]},air:{aqiRange:[70,160],co2Range:[410,428],tempRange:[10,43]},topCrops:['Soybean','Wheat','Chickpea','Mustard','Garlic','Maize']},
+      'Indore':{lat:22.7196,lng:75.8577,climate:'sub_tropical',soil:{phRange:[7.0,8.1],organicRange:[2.0,3.6],moistureRange:[28,52],type:'clay loam'},water:{phRange:[7.1,7.8],tdsRange:[250,580],nitrateRange:[0.3,0.9]},air:{aqiRange:[75,170],co2Range:[410,430],tempRange:[11,43]},topCrops:['Soybean','Wheat','Chickpea','Garlic','Potato','Onion']},
+      'Nagpur':{lat:21.1458,lng:79.0882,climate:'tropical',soil:{phRange:[6.8,8.0],organicRange:[1.8,3.5],moistureRange:[25,55],type:'clay loam'},water:{phRange:[7.0,7.7],tdsRange:[200,500],nitrateRange:[0.3,0.8]},air:{aqiRange:[70,160],co2Range:[410,428],tempRange:[12,46]},topCrops:['Cotton','Soybean','Citrus','Rice','Chickpea','Wheat']},
+      'Pune':{lat:18.5204,lng:73.8567,climate:'sub_tropical',soil:{phRange:[6.2,7.6],organicRange:[2.0,4.0],moistureRange:[30,55],type:'clay loam'},water:{phRange:[6.8,7.5],tdsRange:[150,450],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,130],co2Range:[408,425],tempRange:[12,38]},topCrops:['Sugarcane','Soybean','Cotton','Onion','Rice','Maize']},
+      'Nashik':{lat:19.9975,lng:73.7898,climate:'sub_tropical',soil:{phRange:[6.2,7.5],organicRange:[2.2,4.2],moistureRange:[32,58],type:'clay loam'},water:{phRange:[6.8,7.4],tdsRange:[160,420],nitrateRange:[0.2,0.7]},air:{aqiRange:[50,120],co2Range:[408,424],tempRange:[10,39]},topCrops:['Onion','Citrus','Sugarcane','Soybean','Tomatoes','Rice']},
+      'Hyderabad':{lat:17.3850,lng:78.4867,climate:'sub_tropical',soil:{phRange:[6.0,7.5],organicRange:[1.5,3.5],moistureRange:[25,50],type:'sandy loam'},water:{phRange:[7.0,7.8],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[16,42]},topCrops:['Rice','Cotton','Maize','Groundnut','Chilli','Paddy']},
 
       // Western Arid & Semi-Arid (Rajasthan, Gujarat)
-      'Jaipur':{lat:26.9124,lng:75.7873,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.3,1.0],moistureRange:[5,20],type:'sandy soil'},water:{phRange:[7.5,8.5],tdsRange:[500,1500],nitrateRange:[0.5,2.0]},air:{aqiRange:[80,200],co2Range:[410,428],tempRange:[8,45]}},
-      'Jodhpur':{lat:26.2389,lng:73.0243,climate:'arid_desert',soil:{phRange:[7.8,9.2],organicRange:[0.2,0.8],moistureRange:[4,16],type:'sandy soil'},water:{phRange:[7.6,8.6],tdsRange:[600,1800],nitrateRange:[0.6,2.2]},air:{aqiRange:[70,180],co2Range:[410,426],tempRange:[7,46]}},
-      'Ahmedabad':{lat:23.0225,lng:72.5714,climate:'arid_desert',soil:{phRange:[7.0,8.5],organicRange:[0.5,1.5],moistureRange:[10,25],type:'sandy loam'},water:{phRange:[7.2,8.0],tdsRange:[400,1200],nitrateRange:[0.4,1.5]},air:{aqiRange:[80,180],co2Range:[411,428],tempRange:[10,45]}},
+      'Jaipur':{lat:26.9124,lng:75.7873,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.3,1.0],moistureRange:[5,20],type:'sandy soil'},water:{phRange:[7.5,8.5],tdsRange:[500,1500],nitrateRange:[0.5,2.0]},air:{aqiRange:[80,200],co2Range:[410,428],tempRange:[8,45]},topCrops:['Mustard','Bajra','Wheat','Chickpea','Barley','Dates']},
+      'Jodhpur':{lat:26.2389,lng:73.0243,climate:'arid_desert',soil:{phRange:[7.8,9.2],organicRange:[0.2,0.8],moistureRange:[4,16],type:'sandy soil'},water:{phRange:[7.6,8.6],tdsRange:[600,1800],nitrateRange:[0.6,2.2]},air:{aqiRange:[70,180],co2Range:[410,426],tempRange:[7,46]},topCrops:['Bajra','Mustard','Chickpea','Wheat','Dates','Barley']},
+      'Ahmedabad':{lat:23.0225,lng:72.5714,climate:'arid_desert',soil:{phRange:[7.0,8.5],organicRange:[0.5,1.5],moistureRange:[10,25],type:'sandy loam'},water:{phRange:[7.2,8.0],tdsRange:[400,1200],nitrateRange:[0.4,1.5]},air:{aqiRange:[80,180],co2Range:[411,428],tempRange:[10,45]},topCrops:['Groundnut','Cotton','Wheat','Mustard','Chickpea','Citrus']},
 
       // Eastern / Deltaic & North East
-      'Kolkata':{lat:22.5726,lng:88.3639,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.5],moistureRange:[50,75],type:'alluvial soil'},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.8]},air:{aqiRange:[80,200],co2Range:[412,430],tempRange:[15,38]}},
-      'Bhubaneswar':{lat:20.2961,lng:85.8245,climate:'tropical',soil:{phRange:[5.4,6.8],organicRange:[2.0,4.2],moistureRange:[45,72],type:'alluvial soil'},water:{phRange:[6.6,7.4],tdsRange:[120,380],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,160],co2Range:[410,426],tempRange:[16,42]}},
-      'Guwahati':{lat:26.1445,lng:91.7362,climate:'tropical',soil:{phRange:[4.8,6.2],organicRange:[2.8,5.2],moistureRange:[55,80],type:'clay loam'},water:{phRange:[6.4,7.2],tdsRange:[80,260],nitrateRange:[0.1,0.6]},air:{aqiRange:[40,110],co2Range:[406,420],tempRange:[10,36]}},
+      'Kolkata':{lat:22.5726,lng:88.3639,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.5],moistureRange:[50,75],type:'alluvial soil'},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.8]},air:{aqiRange:[80,200],co2Range:[412,430],tempRange:[15,38]},topCrops:['Rice','Jute','Potatoes','Mustard','Maize','Tomatoes']},
+      'Bhubaneswar':{lat:20.2961,lng:85.8245,climate:'tropical',soil:{phRange:[5.4,6.8],organicRange:[2.0,4.2],moistureRange:[45,72],type:'alluvial soil'},water:{phRange:[6.6,7.4],tdsRange:[120,380],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,160],co2Range:[410,426],tempRange:[16,42]},topCrops:['Rice','Groundnut','Sugarcane','Chickpea','Vegetables','Tomatoes']},
+      'Guwahati':{lat:26.1445,lng:91.7362,climate:'tropical',soil:{phRange:[4.8,6.2],organicRange:[2.8,5.2],moistureRange:[55,80],type:'clay loam'},water:{phRange:[6.4,7.2],tdsRange:[80,260],nitrateRange:[0.1,0.6]},air:{aqiRange:[40,110],co2Range:[406,420],tempRange:[10,36]},topCrops:['Rice','Tea','Mustard','Jute','Potatoes','Vegetables']},
 
       // Southern Peninsula & Coastal
-      'Mumbai':{lat:19.0760,lng:72.8777,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.0],moistureRange:[45,70],type:'loam'},water:{phRange:[6.5,7.5],tdsRange:[100,300],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[18,38]}},
-      'Bangalore':{lat:12.9716,lng:77.5946,climate:'temperate',soil:{phRange:[5.8,7.2],organicRange:[2.5,4.5],moistureRange:[35,60],type:'sandy loam'},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,120],co2Range:[408,422],tempRange:[15,35]}},
-      'Chennai':{lat:13.0827,lng:80.2707,climate:'tropical',soil:{phRange:[5.5,7.5],organicRange:[1.5,3.5],moistureRange:[30,55],type:'sandy loam'},water:{phRange:[6.8,7.6],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[22,40]}},
-      'Coimbatore':{lat:11.0168,lng:76.9558,climate:'sub_tropical',soil:{phRange:[6.2,7.8],organicRange:[1.8,3.8],moistureRange:[28,52],type:'loam'},water:{phRange:[6.9,7.6],tdsRange:[180,480],nitrateRange:[0.2,0.8]},air:{aqiRange:[40,110],co2Range:[408,422],tempRange:[18,38]}},
-      'Kochi':{lat:9.9312,lng:76.2673,climate:'tropical',soil:{phRange:[4.8,6.4],organicRange:[2.8,5.0],moistureRange:[55,80],type:'loam'},water:{phRange:[6.4,7.2],tdsRange:[90,280],nitrateRange:[0.1,0.6]},air:{aqiRange:[35,90],co2Range:[406,420],tempRange:[22,36]}},
+      'Mumbai':{lat:19.0760,lng:72.8777,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.0],moistureRange:[45,70],type:'loam'},water:{phRange:[6.5,7.5],tdsRange:[100,300],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[18,38]},topCrops:['Rice','Sugarcane','Coconut','Banana','Vegetables','Tomatoes']},
+      'Bangalore':{lat:12.9716,lng:77.5946,climate:'temperate',soil:{phRange:[5.8,7.2],organicRange:[2.5,4.5],moistureRange:[35,60],type:'sandy loam'},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,120],co2Range:[408,422],tempRange:[15,35]},topCrops:['Maize','Rice','Ragi','Groundnut','Sugarcane','Tomatoes']},
+      'Chennai':{lat:13.0827,lng:80.2707,climate:'tropical',soil:{phRange:[5.5,7.5],organicRange:[1.5,3.5],moistureRange:[30,55],type:'sandy loam'},water:{phRange:[6.8,7.6],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[22,40]},topCrops:['Rice','Sugarcane','Groundnut','Banana','Cotton','Coconut']},
+      'Coimbatore':{lat:11.0168,lng:76.9558,climate:'sub_tropical',soil:{phRange:[6.2,7.8],organicRange:[1.8,3.8],moistureRange:[28,52],type:'loam'},water:{phRange:[6.9,7.6],tdsRange:[180,480],nitrateRange:[0.2,0.8]},air:{aqiRange:[40,110],co2Range:[408,422],tempRange:[18,38]},topCrops:['Cotton','Sugarcane','Banana','Coconut','Rice','Tea']},
+      'Kochi':{lat:9.9312,lng:76.2673,climate:'tropical',soil:{phRange:[4.8,6.4],organicRange:[2.8,5.0],moistureRange:[55,80],type:'loam'},water:{phRange:[6.4,7.2],tdsRange:[90,280],nitrateRange:[0.1,0.6]},air:{aqiRange:[35,90],co2Range:[406,420],tempRange:[22,36]},topCrops:['Rice','Coconut','Banana','Tapioca','Black Pepper','Rubber']},
 
       // Himalayan & Northern Temperate
-      'Shimla':{lat:31.1048,lng:77.1734,climate:'temperate',soil:{phRange:[5.4,6.8],organicRange:[3.0,6.0],moistureRange:[35,65],type:'loam'},water:{phRange:[6.7,7.3],tdsRange:[70,220],nitrateRange:[0.1,0.5]},air:{aqiRange:[25,75],co2Range:[405,418],tempRange:[-2,28]}},
-      'Srinagar':{lat:34.0837,lng:74.7973,climate:'temperate',soil:{phRange:[5.8,7.2],organicRange:[3.2,6.2],moistureRange:[35,65],type:'clay loam'},water:{phRange:[6.8,7.4],tdsRange:[80,240],nitrateRange:[0.1,0.5]},air:{aqiRange:[30,85],co2Range:[406,420],tempRange:[-5,32]}},
+      'Shimla':{lat:31.1048,lng:77.1734,climate:'temperate',soil:{phRange:[5.4,6.8],organicRange:[3.0,6.0],moistureRange:[35,65],type:'loam'},water:{phRange:[6.7,7.3],tdsRange:[70,220],nitrateRange:[0.1,0.5]},air:{aqiRange:[25,75],co2Range:[405,418],tempRange:[-2,28]},topCrops:['Apple','Maize','Wheat','Barley','Potatoes','Citrus']},
+      'Srinagar':{lat:34.0837,lng:74.7973,climate:'temperate',soil:{phRange:[5.8,7.2],organicRange:[3.2,6.2],moistureRange:[35,65],type:'clay loam'},water:{phRange:[6.8,7.4],tdsRange:[80,240],nitrateRange:[0.1,0.5]},air:{aqiRange:[30,85],co2Range:[406,420],tempRange:[-5,32]},topCrops:['Apple','Rice','Wheat','Barley','Potatoes','Mustard']},
 
       // Neighboring & Global References
-      'Lahore':{lat:31.5204,lng:74.3587,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,250],co2Range:[412,435],tempRange:[6,42]}},
-      'Dhaka':{lat:23.8103,lng:90.4125,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.5,4.5],moistureRange:[55,80],type:'alluvial soil'},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[80,250],co2Range:[412,432],tempRange:[18,38]}},
-      'Nairobi':{lat:-1.2921,lng:36.8219,climate:'temperate',soil:{phRange:[5.5,7.0],organicRange:[2.5,5.0],moistureRange:[35,60],type:'loam'},water:{phRange:[6.8,7.4],tdsRange:[100,300],nitrateRange:[0.1,0.5]},air:{aqiRange:[30,80],co2Range:[406,420],tempRange:[12,28]}},
-      'Cairo':{lat:30.0444,lng:31.2357,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.1,0.5],moistureRange:[2,10],type:'sandy soil'},water:{phRange:[7.5,8.5],tdsRange:[500,2000],nitrateRange:[0.5,2.5]},air:{aqiRange:[100,300],co2Range:[412,435],tempRange:[12,42]}},
-      'Bangkok':{lat:13.7563,lng:100.5018,climate:'tropical',soil:{phRange:[5.0,6.5],organicRange:[2.5,4.5],moistureRange:[55,80],type:'clay'},water:{phRange:[6.5,7.2],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[25,38]}},
+      'Lahore':{lat:31.5204,lng:74.3587,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,250],co2Range:[412,435],tempRange:[6,42]},topCrops:['Wheat','Rice','Mustard','Cotton','Maize','Sugarcane']},
+      'Dhaka':{lat:23.8103,lng:90.4125,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.5,4.5],moistureRange:[55,80],type:'alluvial soil'},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[80,250],co2Range:[412,432],tempRange:[18,38]},topCrops:['Rice','Jute','Potatoes','Mustard','Tea','Vegetables']},
+      'Nairobi':{lat:-1.2921,lng:36.8219,climate:'temperate',soil:{phRange:[5.5,7.0],organicRange:[2.5,5.0],moistureRange:[35,60],type:'loam'},water:{phRange:[6.8,7.4],tdsRange:[100,300],nitrateRange:[0.1,0.5]},air:{aqiRange:[30,80],co2Range:[406,420],tempRange:[12,28]},topCrops:['Tea','Maize','Potatoes','Vegetables','Wheat','Barley']},
+      'Cairo':{lat:30.0444,lng:31.2357,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.1,0.5],moistureRange:[2,10],type:'sandy soil'},water:{phRange:[7.5,8.5],tdsRange:[500,2000],nitrateRange:[0.5,2.5]},air:{aqiRange:[100,300],co2Range:[412,435],tempRange:[12,42]},topCrops:['Wheat','Dates','Cotton','Rice','Citrus','Barley']},
+      'Bangkok':{lat:13.7563,lng:100.5018,climate:'tropical',soil:{phRange:[5.0,6.5],organicRange:[2.5,4.5],moistureRange:[55,80],type:'clay'},water:{phRange:[6.5,7.2],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[25,38]},topCrops:['Rice','Sugarcane','Cassava','Rubber','Coconut','Banana']},
     };
   }
   initCropDB(){
     return {
       'Wheat':{icon:'fa-wheat-awn',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2YwYzI3ZiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2M3OTMyZSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjL48L3RleHQ+PC9zdmc+',type:'grain',optimalPH:{min:6.0,max:7.5,ideal:6.8},optimalMoisture:{min:15,max:35,ideal:25},optimalTemp:{min:10,max:25,ideal:18},soilTypes:['sandy loam','clay loam','loam','alluvial soil'],waterNeeds:'medium',climateZones:['fertile_plains','temperate'],season:['fall','winter'],maturityDays:120,yieldPotential:'high'},
-      'Rice':{icon:'fa-leaf',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2E4ZTA2MyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzU2YWIyZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjL88L3RleHQ+PC9zdmc+',type:'grain',optimalPH:{min:5.5,max:7.0,ideal:6.2},optimalMoisture:{min:50,max:80,ideal:70},optimalTemp:{min:20,max:35,ideal:28},soilTypes:['clay','clay loam','alluvial soil'],waterNeeds:'high',climateZones:['tropical','sub_tropical','fertile_plains'],season:['spring','summer'],maturityDays:130,yieldPotential:'high'},
+      'Rice':{icon:'fa-leaf',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2E4ZTA2MyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzU2YWIyZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjL88L3RleHQ+PC9zdmc+',type:'grain',optimalPH:{min:4.8,max:8.2,ideal:6.2},optimalMoisture:{min:35,max:90,ideal:70},optimalTemp:{min:18,max:38,ideal:28},soilTypes:['clay','clay loam','alluvial soil','loam','sandy loam','laterite'],waterNeeds:'high',climateZones:['tropical','sub_tropical','fertile_plains','all'],season:['spring','summer','fall','winter','year-round'],maturityDays:125,yieldPotential:'high'},
       'Maize':{icon:'fa-seedling',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2Y3ZDg2YyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2Q0YTAxNyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjL08L3RleHQ+PC9zdmc+',type:'grain',optimalPH:{min:5.8,max:7.0,ideal:6.5},optimalMoisture:{min:25,max:50,ideal:38},optimalTemp:{min:18,max:35,ideal:26},soilTypes:['sandy loam','loam','clay loam'],waterNeeds:'medium-high',climateZones:['tropical','sub_tropical','temperate','fertile_plains'],season:['spring','summer'],maturityDays:100,yieldPotential:'high'},
       'Tomatoes':{icon:'fa-circle-dot',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmNmI2YiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2MwMzkyYiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjYU8L3RleHQ+PC9zdmc+',type:'vegetable',optimalPH:{min:6.0,max:7.0,ideal:6.5},optimalMoisture:{min:30,max:55,ideal:45},optimalTemp:{min:18,max:30,ideal:24},soilTypes:['sandy loam','loam'],waterNeeds:'medium',climateZones:['temperate','sub_tropical','mediterranean'],season:['spring','summer'],maturityDays:75,yieldPotential:'high'},
       'Potatoes':{icon:'fa-egg',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2Q0YTU3NCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzhiNjkxNCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfpZQ8L3RleHQ+PC9zdmc+',type:'vegetable',optimalPH:{min:5.0,max:6.5,ideal:5.8},optimalMoisture:{min:30,max:55,ideal:42},optimalTemp:{min:10,max:22,ideal:17},soilTypes:['sandy loam','sandy soil','loam'],waterNeeds:'medium',climateZones:['temperate','fertile_plains','sub_tropical'],season:['spring','fall'],maturityDays:90,yieldPotential:'high'},
@@ -5260,6 +5274,18 @@ class CityBasedAgriculturalData {
       'Sugarcane':{icon:'fa-bars',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2I4ZTk5NCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzM4NzYxZCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjos8L3RleHQ+PC9zdmc+',type:'cash',optimalPH:{min:5.0,max:8.5,ideal:6.5},optimalMoisture:{min:50,max:75,ideal:65},optimalTemp:{min:20,max:35,ideal:28},soilTypes:['clay loam','sandy loam','alluvial soil'],waterNeeds:'high',climateZones:['fertile_plains','tropical','sub_tropical'],season:['spring','summer'],maturityDays:300,yieldPotential:'high'},
       'Chickpea':{icon:'fa-circle',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2YwZTY4YyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2I4ODYwYiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfq5s8L3RleHQ+PC9zdmc+',type:'legume',optimalPH:{min:6.0,max:8.0,ideal:7.0},optimalMoisture:{min:10,max:30,ideal:20},optimalTemp:{min:15,max:30,ideal:22},soilTypes:['sandy loam','loam','clay loam'],waterNeeds:'low',climateZones:['fertile_plains','arid_desert','sub_tropical'],season:['fall','winter'],maturityDays:100,yieldPotential:'medium'},
       'Mustard':{icon:'fa-sun',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmZTA2NiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2U2YTgxNyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjLs8L3RleHQ+PC9zdmc+',type:'oilseed',optimalPH:{min:6.0,max:7.5,ideal:6.8},optimalMoisture:{min:15,max:35,ideal:25},optimalTemp:{min:10,max:25,ideal:18},soilTypes:['sandy loam','loam','clay loam'],waterNeeds:'low',climateZones:['fertile_plains','temperate','sub_tropical'],season:['fall','winter'],maturityDays:110,yieldPotential:'medium'},
+      'Coconut':{icon:'fa-tree',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzhkNmU2MyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzRlMzQyZSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfpaU8L3RleHQ+PC9zdmc+',type:'plantation',optimalPH:{min:5.0,max:8.0,ideal:6.5},optimalMoisture:{min:45,max:85,ideal:65},optimalTemp:{min:20,max:38,ideal:27},soilTypes:['loam','sandy loam','coastal alluvium','laterite'],waterNeeds:'high',climateZones:['tropical','sub_tropical'],season:['year-round'],maturityDays:365,yieldPotential:'high'},
+      'Banana':{icon:'fa-leaf',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmZTA4MiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZiYzAyZCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjYw8L3RleHQ+PC9zdmc+',type:'fruit',optimalPH:{min:5.5,max:7.5,ideal:6.5},optimalMoisture:{min:50,max:85,ideal:70},optimalTemp:{min:20,max:38,ideal:27},soilTypes:['clay loam','loam','alluvial soil'],waterNeeds:'high',climateZones:['tropical','sub_tropical'],season:['year-round'],maturityDays:300,yieldPotential:'high'},
+      'Tapioca':{icon:'fa-carrot',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2Q3Y2NjOCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6Izc5NTU0OCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjaA8L3RleHQ+PC9zdmc+',type:'tuber',optimalPH:{min:4.5,max:7.5,ideal:5.8},optimalMoisture:{min:30,max:70,ideal:50},optimalTemp:{min:22,max:38,ideal:28},soilTypes:['laterite','loam','sandy loam'],waterNeeds:'medium',climateZones:['tropical','sub_tropical'],season:['year-round'],maturityDays:270,yieldPotential:'high'},
+      'Black Pepper':{icon:'fa-seedling',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6Izc4OTA5YyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzI2MzIzOCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjL88L3RleHQ+PC9zdmc+',type:'spice',optimalPH:{min:4.5,max:6.5,ideal:5.5},optimalMoisture:{min:60,max:90,ideal:75},optimalTemp:{min:20,max:35,ideal:26},soilTypes:['loam','clay loam','laterite'],waterNeeds:'high',climateZones:['tropical'],season:['year-round'],maturityDays:365,yieldPotential:'high'},
+      'Rubber':{icon:'fa-tree',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzgxYzc4NCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzFiNWUyMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjLM8L3RleHQ+PC9zdmc+',type:'cash',optimalPH:{min:4.5,max:6.5,ideal:5.2},optimalMoisture:{min:55,max:85,ideal:70},optimalTemp:{min:22,max:36,ideal:27},soilTypes:['laterite','loam','clay loam'],waterNeeds:'high',climateZones:['tropical'],season:['year-round'],maturityDays:365,yieldPotential:'high'},
+      'Groundnut':{icon:'fa-seedling',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmY2M4MCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2U2NTEwMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfpZw8L3RleHQ+PC9zdmc+',type:'oilseed',optimalPH:{min:6.0,max:7.5,ideal:6.5},optimalMoisture:{min:20,max:45,ideal:30},optimalTemp:{min:22,max:35,ideal:28},soilTypes:['sandy loam','loam','sandy soil'],waterNeeds:'low-medium',climateZones:['tropical','sub_tropical','fertile_plains'],season:['spring','summer','fall'],maturityDays:110,yieldPotential:'high'},
+      'Tea':{icon:'fa-mug-hot',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2E1ZDZhNyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzJlN2QzMiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjbU8L3RleHQ+PC9zdmc+',type:'plantation',optimalPH:{min:4.5,max:6.0,ideal:5.2},optimalMoisture:{min:50,max:85,ideal:68},optimalTemp:{min:15,max:32,ideal:22},soilTypes:['loam','clay loam','laterite'],waterNeeds:'high',climateZones:['tropical','temperate','sub_tropical'],season:['year-round'],maturityDays:365,yieldPotential:'high'},
+      'Bajra':{icon:'fa-wheat-awn',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmZTA4MiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2Y1N2YxNyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjL48L3RleHQ+PC9zdmc+',type:'grain',optimalPH:{min:6.5,max:8.5,ideal:7.5},optimalMoisture:{min:10,max:30,ideal:18},optimalTemp:{min:24,max:42,ideal:32},soilTypes:['sandy soil','sandy loam','desert soil'],waterNeeds:'very-low',climateZones:['arid_desert','sub_tropical'],season:['summer','fall'],maturityDays:85,yieldPotential:'medium'},
+      'Chilli':{icon:'fa-pepper-hot',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2VmNTM1MCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2I3MWMxYyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjLbvuI88L3RleHQ+PC9zdmc+',type:'cash',optimalPH:{min:5.8,max:7.2,ideal:6.5},optimalMoisture:{min:25,max:50,ideal:35},optimalTemp:{min:20,max:35,ideal:27},soilTypes:['loam','clay loam','sandy loam'],waterNeeds:'medium',climateZones:['tropical','sub_tropical','fertile_plains'],season:['spring','summer','fall'],maturityDays:100,yieldPotential:'high'},
+      'Ragi':{icon:'fa-seedling',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2JjYWFhNCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzRlMzQyZSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjL48L3RleHQ+PC9zdmc+',type:'grain',optimalPH:{min:5.0,max:7.8,ideal:6.5},optimalMoisture:{min:15,max:40,ideal:25},optimalTemp:{min:18,max:35,ideal:26},soilTypes:['sandy loam','loam','laterite'],waterNeeds:'low',climateZones:['tropical','sub_tropical','temperate'],season:['summer','fall'],maturityDays:100,yieldPotential:'medium'},
+      'Jute':{icon:'fa-plant-wilt',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2M1ZTFhNSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMzNjkxZSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjLE8L3RleHQ+PC9zdmc+',type:'cash',optimalPH:{min:5.5,max:7.2,ideal:6.4},optimalMoisture:{min:60,max:90,ideal:75},optimalTemp:{min:24,max:38,ideal:31},soilTypes:['alluvial soil','clay loam','loam'],waterNeeds:'high',climateZones:['tropical','fertile_plains'],season:['spring','summer'],maturityDays:120,yieldPotential:'high'},
+      'Apple':{icon:'fa-apple-whole',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmOGE4MCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2M2MjgyOCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjY48L3RleHQ+PC9zdmc+',type:'fruit',optimalPH:{min:5.5,max:7.0,ideal:6.2},optimalMoisture:{min:30,max:60,ideal:45},optimalTemp:{min:-5,max:24,ideal:15},soilTypes:['loam','clay loam','sandy loam'],waterNeeds:'medium',climateZones:['temperate'],season:['spring','summer','fall'],maturityDays:160,yieldPotential:'high'},
       'Onion':{icon:'fa-layer-group',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2RkYTBkZCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzhiNDc4OSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfp4U8L3RleHQ+PC9zdmc+',type:'vegetable',optimalPH:{min:6.0,max:7.0,ideal:6.5},optimalMoisture:{min:25,max:50,ideal:38},optimalTemp:{min:12,max:28,ideal:20},soilTypes:['sandy loam','loam'],waterNeeds:'medium',climateZones:['temperate','sub_tropical','fertile_plains','mediterranean'],season:['fall','winter','spring'],maturityDays:120,yieldPotential:'medium'},
       'Garlic':{icon:'fa-asterisk',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmZWNkMiIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2M5YTg3YyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfp4Q8L3RleHQ+PC9zdmc+',type:'vegetable',optimalPH:{min:6.0,max:7.0,ideal:6.5},optimalMoisture:{min:20,max:40,ideal:30},optimalTemp:{min:10,max:25,ideal:18},soilTypes:['sandy loam','loam'],waterNeeds:'low-medium',climateZones:['temperate','fertile_plains','mediterranean'],season:['fall','winter'],maturityDays:180,yieldPotential:'medium'},
       'Citrus':{icon:'fa-lemon',img:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmYTc1MSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2U4NjEwMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiByeD0iMjQiIGZpbGw9InVybCgjYmcpIi8+PHRleHQgeD0iMTAwIiB5PSIxMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iNzIiPvCfjYo8L3RleHQ+PC9zdmc+',type:'fruit',optimalPH:{min:6.0,max:7.5,ideal:6.5},optimalMoisture:{min:30,max:50,ideal:40},optimalTemp:{min:13,max:35,ideal:25},soilTypes:['sandy loam','loam'],waterNeeds:'medium',climateZones:['mediterranean','tropical','sub_tropical'],season:['year-round'],maturityDays:270,yieldPotential:'medium'},
@@ -5297,7 +5323,7 @@ class CityBasedAgriculturalData {
       air:{aqi,co2,temperature:temp,humidity,windSpeed:Math.round(rng(2,8)*10)/10},
       ndvi:{ndvi,vegetationHealth:ndvi>0.7?'Excellent':ndvi>0.5?'Good':'Moderate'},
     };
-    farmData.crops=this.cropRecommender.getOptimalCrops(this.cropDatabase,farmData,cityData.climate);
+    farmData.crops=this.cropRecommender.getOptimalCrops(this.cropDatabase,farmData,cityData.climate,cityData);
     return farmData;
   }
 
@@ -6780,7 +6806,9 @@ async function fetchOpenMeteoWeather(lat,lng){
         updateFarmDisplayValues();
         if(windChart) updateWindChart();
         if(!currentFarmData.aiRanked && locGen && locGen.cropRecommender && locGen.cropDatabase){
-          currentFarmData.crops=locGen.cropRecommender.getOptimalCrops(locGen.cropDatabase,currentFarmData,currentFarmData.zone);
+          const nearest = (locGen.findNearestCity && currentLocation) ? locGen.findNearestCity(currentLocation.lat, currentLocation.lng) : null;
+          const cityData = (nearest && locGen.cityDatabase) ? locGen.cityDatabase[nearest.name] : null;
+          currentFarmData.crops=locGen.cropRecommender.getOptimalCrops(locGen.cropDatabase,currentFarmData,currentFarmData.zone,cityData);
           updateCarousel();
         }
         if(!currentFarmData.aiRanked){
@@ -7089,7 +7117,7 @@ function updateCarousel(){
     aiBanner = `
       <div class="ai-crops-banner" style="display:flex;align-items:center;justify-content:center;gap:12px;padding:14px 18px;background:rgba(224,166,58,0.08);border:1px dashed rgba(224,166,58,0.4);border-radius:14px;margin-bottom:20px;width:100%">
         <div class="spinner" style="width:18px;height:18px;border-width:2.5px;border-top-color:var(--saffron)"></div>
-        <div style="font-size:13px;color:var(--saffron);font-weight:600">Sage AI is analyzing micro-climate, soil chemistry & ranking optimal crops for ${currentFarmData.region}…</div>
+        <div style="font-size:13px;color:var(--saffron);font-weight:600">Sage AI is analyzing regional crop output, soil chemistry & setting optimal crop rankings for ${currentFarmData.region}…</div>
       </div>
     `;
   } else if (currentFarmData.aiRanked) {
@@ -7099,10 +7127,10 @@ function updateCarousel(){
           <span style="font-size:20px">✨</span>
           <div>
             <div style="display:flex;align-items:center;gap:8px">
-              <strong style="font-size:13.5px;color:var(--text-dark)">AI-Ranked for ${currentFarmData.region}</strong>
+              <strong style="font-size:13.5px;color:var(--text-dark)">Crop Rankings set by Sage AI for ${currentFarmData.region}</strong>
               <span class="badge-pill" style="font-size:9.5px;background:rgba(90,168,60,0.18);color:var(--green-500)">SAGE AI · GPT-OSS 120B</span>
             </div>
-            <div style="font-size:11.5px;color:var(--text-light);margin-top:2px">Calibrated for pH ${currentFarmData.soil.ph}, moisture ${currentFarmData.soil.moisture}%, temp ${currentFarmData.air.temperature}°C & current season</div>
+            <div style="font-size:11.5px;color:var(--text-light);margin-top:2px">Calibrated for regional staple production, pH ${currentFarmData.soil.ph}, moisture ${currentFarmData.soil.moisture}%, temp ${currentFarmData.air.temperature}°C & mandi profits</div>
           </div>
         </div>
         <button class="map-btn" style="padding:6px 14px;font-size:12px;background:rgba(224,166,58,0.12);color:var(--saffron);border-color:rgba(224,166,58,0.3)" onclick="fetchAICropRecommendations(true)">
@@ -7112,12 +7140,15 @@ function updateCarousel(){
     `;
   } else {
     aiBanner = `
-      <div class="ai-crops-banner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:rgba(224,166,58,0.06);border:1px solid rgba(224,166,58,0.2);border-radius:14px;margin-bottom:20px;width:100%;flex-wrap:wrap">
+      <div class="ai-crops-banner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:rgba(90,168,60,0.06);border:1px solid rgba(90,168,60,0.2);border-radius:14px;margin-bottom:20px;width:100%;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:20px">🌾</span>
           <div>
-            <strong style="font-size:13.5px;color:var(--text-dark)">Baseline Agro-Ecological Picks for ${currentFarmData.region}</strong>
-            <div style="font-size:11.5px;color:var(--text-light);margin-top:2px">Upgrade with Sage AI to evaluate micro-climate, regional seed varieties, and mandi profit margins</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <strong style="font-size:13.5px;color:var(--text-dark)">Crop Recommendations for ${currentFarmData.region}</strong>
+              <span class="badge-pill" style="font-size:9.5px;background:rgba(90,168,60,0.15);color:var(--green-500)">REGIONAL STAPLES</span>
+            </div>
+            <div style="font-size:11.5px;color:var(--text-light);margin-top:2px">Prioritizing state production dominance, soil pH ${currentFarmData.soil.ph} & live climate</div>
           </div>
         </div>
         <button class="map-btn primary" style="padding:7px 16px;font-size:12px;display:inline-flex;align-items:center;gap:6px" onclick="fetchAICropRecommendations(true)">
@@ -7422,40 +7453,54 @@ async function fetchAICropRecommendations(force = false){
   updateCarousel();
 
   const fd = currentFarmData;
+  const nearest = (locGen && locGen.findNearestCity && currentLocation) ? locGen.findNearestCity(currentLocation.lat, currentLocation.lng) : null;
+  const cityData = (nearest && locGen?.cityDatabase) ? locGen.cityDatabase[nearest.name] : null;
+  const topProduced = (cityData && cityData.topCrops) ? cityData.topCrops.join(', ') : '';
+
   const prompt = `You are Sage AI, Chief Agronomist and Senior Crop Scientist at FasalAI.
-Recommend the top 6 most suitable, agronomically sound, and profitable crops to cultivate for this specific farm:
+Set the definitive top 6 crop rankings cultivated for this specific farm:
 - Farm Location: ${fd.region} (${currentLocation?.lat ? currentLocation.lat.toFixed(3) : ''}, ${currentLocation?.lng ? currentLocation.lng.toFixed(3) : ''})
 - Agro-Climatic Zone: ${fd.zoneName} (${fd.zone})
+- Regional Dominant / Staple Crops: ${topProduced || 'Key regional staples'}
 - Soil Chemistry: pH ${fd.soil.ph}, Moisture ${fd.soil.moisture}%, Organic Matter ${fd.soil.organicMatter || 2.5}%, Nitrogen ${fd.soil.nitrogen || 240} mg/kg, Soil Type: ${fd.soil.type}
 - Real-Time Weather: Temperature ${fd.air.temperature}°C, Humidity ${fd.air.humidity}%, Rain ${fd.air.precipitation || 0}mm, Wind ${fd.air.windSpeed} km/h
 - Current Month & Season: Month ${new Date().toLocaleString('default', { month: 'long' })}, Season: ${locGen?.cropRecommender?.getCurrentSeason() || 'summer'}
 
+CRITICAL AGRONOMIC AND REGIONAL PRODUCTION RULES:
+1. The recommendations MUST strictly reflect the historically and commercially most produced staple and cash crops of ${fd.region}!
+2. For Kerala (Kochi, Palakkad, Alappuzha, Thrissur, etc.): Rice (Paddy / Pokkali / Uma) MUST be ranked #1 (or #2 alongside Coconut), followed by Coconut, Banana (Nendran), Tapioca, Black Pepper, Rubber. Under no circumstance omit Rice or rank non-tropical crops above Rice in Kerala.
+3. For Punjab / Haryana / Western UP: Wheat (HD-3086 / PBW) and Rice (Basmati) MUST lead the rankings.
+4. For Madhya Pradesh: Soybean (JS 20-34 / JS 95-60) and Wheat MUST lead.
+5. For West Bengal / Assam / Bihar: Rice / Paddy (Swarna / MTU 7029) and Jute / Mustard MUST lead.
+6. For Gujarat / Rajasthan: Groundnut, Cotton, Mustard, Bajra.
+7. For Karnataka / Tamil Nadu / Andhra Pradesh: Rice, Sugarcane, Ragi, Groundnut, Cotton.
+
 Return ONLY a valid JSON array of exactly 6 crop objects, sorted in descending order of match percentage:
 [
   {
-    "name": "Wheat (HD-3086 / DBW-187)",
-    "baseName": "Wheat",
-    "match": 95,
-    "reason": "Optimal for fertile alluvial soil with current cool night temperatures. Excellent disease resistance and winter cycle fit.",
+    "name": "Rice (Uma / Pokkali)",
+    "baseName": "Rice",
+    "match": 97,
+    "reason": "Dominant staple crop of Kerala thriving in high humidity, loam soil and warm tropical conditions with exceptional local market demand.",
     "type": "grain",
-    "maturity": 120,
-    "yield": "48-52 q/ha",
-    "profit": "₹42,000/acre net margin",
-    "sowingWindow": "Oct 25 - Nov 15",
-    "icon": "fa-wheat-awn"
+    "maturity": 125,
+    "yield": "52-58 q/ha",
+    "profit": "₹46,000/acre net margin",
+    "sowingWindow": "Year-round / Kharif",
+    "icon": "fa-leaf"
   }
 ]
 Guidelines:
 - "name": Crop name with top-yielding regional variety cultivated in ${fd.region}.
-- "baseName": Standard root crop name (Wheat, Rice, Mustard, Chickpea, Cotton, Sugarcane, Maize, Soybean, Potato, Tomato, Onion, Groundnut, Barley, Millets).
-- "match": High realistic match score (80-98).
-- "reason": 1-2 sentence precise scientific explanation linking soil pH, temperature, and season.
-- "type": "grain" | "oilseed" | "legume" | "cash" | "vegetable" | "fruit".
+- "baseName": Standard root crop name (Rice, Wheat, Coconut, Banana, Tapioca, Pepper, Rubber, Mustard, Chickpea, Cotton, Sugarcane, Maize, Soybean, Potato, Tomato, Onion, Groundnut, Barley, Millets, Ragi, Bajra, Tea).
+- "match": High realistic match score (82-98), with #1 crop scoring 96-98%.
+- "reason": 1-2 sentence precise scientific explanation linking regional production dominance, soil pH, temperature, and season.
+- "type": "grain" | "oilseed" | "legume" | "cash" | "vegetable" | "fruit" | "plantation" | "spice" | "tuber".
 - "maturity": days to maturity (number).
 - "yield": realistic expected yield range.
 - "profit": estimated net return per acre.
 - "sowingWindow": best sowing window.
-- "icon": FontAwesome icon name (e.g. "fa-wheat-awn", "fa-sun", "fa-seedling", "fa-leaf", "fa-circle").
+- "icon": FontAwesome icon name (e.g. "fa-leaf", "fa-tree", "fa-wheat-awn", "fa-sun", "fa-seedling", "fa-circle").
 
 Output raw JSON array ONLY without any backticks, markdown fences or explanatory text.`;
 
@@ -9333,21 +9378,35 @@ async function completeAuthLogin(user, method, fallbackName){
    guaranteed returns. MSP overrides price where notified.
    ═════════════════════════════════════════════════════════════════ */
 const CROP_ECONOMICS = {
-  'Wheat':     {yieldQtl:20,  costAcre:22000, priceQtl:2425, mspKey:'Wheat'},
-  'Rice':      {yieldQtl:25,  costAcre:28000, priceQtl:2369, mspKey:'Paddy'},
-  'Maize':     {yieldQtl:22,  costAcre:20000, priceQtl:2365, mspKey:'Maize'},
-  'Tomatoes':  {yieldQtl:220, costAcre:82000, priceQtl:900},
-  'Potatoes':  {yieldQtl:110, costAcre:62000, priceQtl:1150},
-  'Soybean':   {yieldQtl:10,  costAcre:18000, priceQtl:5020, mspKey:'Soybean'},
-  'Cotton':    {yieldQtl:8,   costAcre:35000, priceQtl:7710, mspKey:'Cotton'},
-  'Sugarcane': {yieldQtl:340, costAcre:46000, priceQtl:355,  mspKey:'Sugarcane'},
-  'Chickpea':  {yieldQtl:8,   costAcre:18000, priceQtl:5650, mspKey:'Chickpea'},
-  'Mustard':   {yieldQtl:7,   costAcre:15000, priceQtl:6250, mspKey:'Mustard'},
-  'Onion':     {yieldQtl:120, costAcre:56000, priceQtl:1450},
-  'Garlic':    {yieldQtl:50,  costAcre:72000, priceQtl:4800},
-  'Citrus':    {yieldQtl:80,  costAcre:52000, priceQtl:2400},
-  'Dates':     {yieldQtl:30,  costAcre:60000, priceQtl:7500},
-  'Barley':    {yieldQtl:15,  costAcre:15000, priceQtl:1865, mspKey:'Barley'}
+  'Wheat':        {yieldQtl:20,  costAcre:22000, priceQtl:2425, mspKey:'Wheat'},
+  'Rice':         {yieldQtl:25,  costAcre:28000, priceQtl:2369, mspKey:'Paddy'},
+  'Paddy':        {yieldQtl:25,  costAcre:28000, priceQtl:2369, mspKey:'Paddy'},
+  'Maize':        {yieldQtl:22,  costAcre:20000, priceQtl:2365, mspKey:'Maize'},
+  'Tomatoes':     {yieldQtl:220, costAcre:82000, priceQtl:900},
+  'Potatoes':     {yieldQtl:110, costAcre:62000, priceQtl:1150},
+  'Soybean':      {yieldQtl:10,  costAcre:18000, priceQtl:5020, mspKey:'Soybean'},
+  'Cotton':       {yieldQtl:8,   costAcre:35000, priceQtl:7710, mspKey:'Cotton'},
+  'Sugarcane':    {yieldQtl:340, costAcre:46000, priceQtl:355,  mspKey:'Sugarcane'},
+  'Chickpea':     {yieldQtl:8,   costAcre:18000, priceQtl:5650, mspKey:'Chickpea'},
+  'Mustard':      {yieldQtl:7,   costAcre:15000, priceQtl:6250, mspKey:'Mustard'},
+  'Coconut':      {yieldQtl:50,  costAcre:32000, priceQtl:3100, mspKey:'Copra'},
+  'Banana':       {yieldQtl:160, costAcre:65000, priceQtl:1850},
+  'Tapioca':      {yieldQtl:120, costAcre:24000, priceQtl:1100},
+  'Black Pepper': {yieldQtl:4,   costAcre:42000, priceQtl:56000},
+  'Pepper':       {yieldQtl:4,   costAcre:42000, priceQtl:56000},
+  'Rubber':       {yieldQtl:12,  costAcre:38000, priceQtl:18500},
+  'Groundnut':    {yieldQtl:12,  costAcre:22000, priceQtl:6783, mspKey:'Groundnut'},
+  'Tea':          {yieldQtl:18,  costAcre:55000, priceQtl:19500},
+  'Bajra':        {yieldQtl:14,  costAcre:12000, priceQtl:2625, mspKey:'Bajra'},
+  'Chilli':       {yieldQtl:15,  costAcre:48000, priceQtl:16500},
+  'Ragi':         {yieldQtl:12,  costAcre:14000, priceQtl:4290, mspKey:'Ragi'},
+  'Jute':         {yieldQtl:14,  costAcre:21000, priceQtl:5335, mspKey:'Jute'},
+  'Apple':        {yieldQtl:90,  costAcre:75000, priceQtl:6500},
+  'Onion':        {yieldQtl:120, costAcre:56000, priceQtl:1450},
+  'Garlic':       {yieldQtl:50,  costAcre:72000, priceQtl:4800},
+  'Citrus':       {yieldQtl:80,  costAcre:52000, priceQtl:2400},
+  'Dates':        {yieldQtl:30,  costAcre:60000, priceQtl:7500},
+  'Barley':       {yieldQtl:15,  costAcre:15000, priceQtl:1865, mspKey:'Barley'}
 };
 const SIM_DEFAULT = {yieldQtl:18, costAcre:25000, priceQtl:2200};
 let simState = {crop:null, acres:2, investPct:50, econ:null};
