@@ -56,3 +56,5 @@ tmp/
 temp/
 
 .vercel
+# Reassembled large model binary (tracked via .part files)
+assets/models/convnext_tiny_plantdisease.onnx

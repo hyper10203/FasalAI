@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "postinstall": "node -e \"const fs=require('fs'),path=require('path');const m=path.join(__dirname,'assets/models/convnext_tiny_plantdisease.onnx'),p=[0,1,2,3].map(i=>path.join(__dirname,'assets/models/convnext_tiny_plantdisease.onnx.part'+i));if(p.every(f=>fs.existsSync(f))&&(!fs.existsSync(m)||fs.statSync(m).size<1024*1024)){fs.writeFileSync(m,Buffer.concat(p.map(f=>fs.readFileSync(f))));console.log('Reassembled ONNX model in postinstall');}\""
   },
   "dependencies": {
     "cors": "^2.8.5",

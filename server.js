@@ -20,6 +20,17 @@ try {
     classNames = JSON.parse(fs.readFileSync(classesPath, 'utf8'));
     console.log(`Loaded ${classNames.length} plant disease / pest classes.`);
   }
+
+  // Reassemble from chunks if model file is missing or is small pointer (< 1MB)
+  const chunkParts = [0, 1, 2, 3].map(i => path.join(__dirname, `assets/models/convnext_tiny_plantdisease.onnx.part${i}`));
+  if (chunkParts.every(p => fs.existsSync(p))) {
+    if (!fs.existsSync(modelPath) || fs.statSync(modelPath).size < 1024 * 1024) {
+      console.log('Reassembling ConvNeXt Tiny ONNX model from chunks...');
+      const bufs = chunkParts.map(p => fs.readFileSync(p));
+      fs.writeFileSync(modelPath, Buffer.concat(bufs));
+      console.log('✅ Model reassembled! Size:', (fs.statSync(modelPath).size / 1024 / 1024).toFixed(2), 'MB');
+    }
+  }
   
   if (fs.existsSync(modelPath) && ort) {
     ort.InferenceSession.create(modelPath).then(session => {

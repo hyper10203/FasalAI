@@ -5172,23 +5172,50 @@ class CityBasedAgriculturalData {
   }
   initCityDB(){
     return {
-      'Amritsar':{lat:31.634,lng:74.8723,climate:'fertile_plains',soil:{phRange:[6.2,7.5],organicRange:[2.5,4.5],moistureRange:[35,60]},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.3,0.9]},air:{aqiRange:[80,180],co2Range:[410,430],tempRange:[5,42]}},
-      'Ludhiana':{lat:30.901,lng:75.8573,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55]},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,200],co2Range:[412,432],tempRange:[6,40]}},
-      'Delhi':{lat:28.6139,lng:77.2090,climate:'sub_tropical',soil:{phRange:[6.8,8.0],organicRange:[1.0,2.5],moistureRange:[20,40]},water:{phRange:[7.2,8.0],tdsRange:[300,800],nitrateRange:[0.5,1.5]},air:{aqiRange:[150,400],co2Range:[415,440],tempRange:[8,45]}},
-      'Mumbai':{lat:19.076,lng:72.8777,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.0],moistureRange:[45,70]},water:{phRange:[6.5,7.5],tdsRange:[100,300],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[18,38]}},
-      'Bangalore':{lat:12.9716,lng:77.5946,climate:'temperate',soil:{phRange:[5.8,7.2],organicRange:[2.5,4.5],moistureRange:[35,60]},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,120],co2Range:[408,422],tempRange:[15,35]}},
-      'Chennai':{lat:13.0827,lng:80.2707,climate:'tropical',soil:{phRange:[5.5,7.5],organicRange:[1.5,3.5],moistureRange:[30,55]},water:{phRange:[6.8,7.6],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[22,40]}},
-      'Kolkata':{lat:22.5726,lng:88.3639,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.5],moistureRange:[50,75]},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.8]},air:{aqiRange:[80,200],co2Range:[412,430],tempRange:[15,38]}},
-      'Hyderabad':{lat:17.385,lng:78.4867,climate:'sub_tropical',soil:{phRange:[5.8,7.5],organicRange:[1.5,3.5],moistureRange:[25,50]},water:{phRange:[7.0,7.8],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[16,42]}},
-      'Jaipur':{lat:26.9124,lng:75.7873,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.3,1.0],moistureRange:[5,20]},water:{phRange:[7.5,8.5],tdsRange:[500,1500],nitrateRange:[0.5,2.0]},air:{aqiRange:[80,200],co2Range:[410,428],tempRange:[8,45]}},
-      'Ahmedabad':{lat:23.0225,lng:72.5714,climate:'arid_desert',soil:{phRange:[7.0,8.5],organicRange:[0.5,1.5],moistureRange:[10,25]},water:{phRange:[7.2,8.0],tdsRange:[400,1200],nitrateRange:[0.4,1.5]},air:{aqiRange:[80,180],co2Range:[411,428],tempRange:[10,45]}},
-      'Pune':{lat:18.5204,lng:73.8567,climate:'sub_tropical',soil:{phRange:[6.0,7.5],organicRange:[2.0,4.0],moistureRange:[30,55]},water:{phRange:[6.8,7.5],tdsRange:[150,450],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,130],co2Range:[408,425],tempRange:[12,38]}},
-      'Lahore':{lat:31.5204,lng:74.3587,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55]},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,250],co2Range:[412,435],tempRange:[6,42]}},
-      'Karachi':{lat:24.8607,lng:67.0011,climate:'coastal_arid',soil:{phRange:[7.5,9.0],organicRange:[0.2,0.8],moistureRange:[5,20]},water:{phRange:[7.5,8.5],tdsRange:[600,2000],nitrateRange:[0.5,2.0]},air:{aqiRange:[80,200],co2Range:[411,430],tempRange:[18,42]}},
-      'Dhaka':{lat:23.8103,lng:90.4125,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.5,4.5],moistureRange:[55,80]},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[80,250],co2Range:[412,432],tempRange:[18,38]}},
-      'Nairobi':{lat:-1.2921,lng:36.8219,climate:'temperate',soil:{phRange:[5.5,7.0],organicRange:[2.5,5.0],moistureRange:[35,60]},water:{phRange:[6.8,7.4],tdsRange:[100,300],nitrateRange:[0.1,0.5]},air:{aqiRange:[30,80],co2Range:[406,420],tempRange:[12,28]}},
-      'Cairo':{lat:30.0444,lng:31.2357,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.1,0.5],moistureRange:[2,10]},water:{phRange:[7.5,8.5],tdsRange:[500,2000],nitrateRange:[0.5,2.5]},air:{aqiRange:[100,300],co2Range:[412,435],tempRange:[12,42]}},
-      'Bangkok':{lat:13.7563,lng:100.5018,climate:'tropical',soil:{phRange:[5.0,6.5],organicRange:[2.5,4.5],moistureRange:[55,80]},water:{phRange:[6.5,7.2],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[25,38]}},
+      // Indo-Gangetic Alluvial & Grain Belts
+      'Amritsar':{lat:31.634,lng:74.8723,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.5,4.5],moistureRange:[35,60],type:'alluvial soil'},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.3,0.9]},air:{aqiRange:[80,180],co2Range:[410,430],tempRange:[5,42]}},
+      'Ludhiana':{lat:30.901,lng:75.8573,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,200],co2Range:[412,432],tempRange:[6,40]}},
+      'Karnal':{lat:29.6857,lng:76.9905,climate:'fertile_plains',soil:{phRange:[6.8,7.9],organicRange:[2.2,4.2],moistureRange:[32,58],type:'alluvial soil'},water:{phRange:[7.0,7.5],tdsRange:[180,450],nitrateRange:[0.3,0.9]},air:{aqiRange:[90,190],co2Range:[411,432],tempRange:[7,42]}},
+      'Delhi':{lat:28.6139,lng:77.2090,climate:'sub_tropical',soil:{phRange:[6.8,8.0],organicRange:[1.0,2.5],moistureRange:[20,40],type:'sandy loam'},water:{phRange:[7.2,8.0],tdsRange:[300,800],nitrateRange:[0.5,1.5]},air:{aqiRange:[150,400],co2Range:[415,440],tempRange:[8,45]}},
+      'Lucknow':{lat:26.8467,lng:80.9462,climate:'fertile_plains',soil:{phRange:[6.5,7.6],organicRange:[1.8,3.8],moistureRange:[35,65],type:'alluvial soil'},water:{phRange:[6.9,7.5],tdsRange:[200,500],nitrateRange:[0.3,0.8]},air:{aqiRange:[100,220],co2Range:[412,435],tempRange:[8,44]}},
+      'Varanasi':{lat:25.3176,lng:82.9739,climate:'fertile_plains',soil:{phRange:[6.6,7.8],organicRange:[2.0,3.9],moistureRange:[38,68],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[220,520],nitrateRange:[0.3,0.8]},air:{aqiRange:[90,210],co2Range:[412,434],tempRange:[9,44]}},
+      'Patna':{lat:25.5941,lng:85.1376,climate:'fertile_plains',soil:{phRange:[6.4,7.5],organicRange:[2.2,4.0],moistureRange:[40,70],type:'alluvial soil'},water:{phRange:[6.8,7.4],tdsRange:[180,450],nitrateRange:[0.2,0.8]},air:{aqiRange:[110,240],co2Range:[413,436],tempRange:[10,43]}},
+
+      // Central India & Deccan (Black Cotton Soil / Vertisols)
+      'Bhopal':{lat:23.2599,lng:77.4126,climate:'sub_tropical',soil:{phRange:[6.8,7.9],organicRange:[1.8,3.5],moistureRange:[25,50],type:'clay loam'},water:{phRange:[7.0,7.7],tdsRange:[220,550],nitrateRange:[0.3,0.9]},air:{aqiRange:[70,160],co2Range:[410,428],tempRange:[10,43]}},
+      'Indore':{lat:22.7196,lng:75.8577,climate:'sub_tropical',soil:{phRange:[7.0,8.1],organicRange:[2.0,3.6],moistureRange:[28,52],type:'clay loam'},water:{phRange:[7.1,7.8],tdsRange:[250,580],nitrateRange:[0.3,0.9]},air:{aqiRange:[75,170],co2Range:[410,430],tempRange:[11,43]}},
+      'Nagpur':{lat:21.1458,lng:79.0882,climate:'tropical',soil:{phRange:[6.8,8.0],organicRange:[1.8,3.5],moistureRange:[25,55],type:'clay loam'},water:{phRange:[7.0,7.7],tdsRange:[200,500],nitrateRange:[0.3,0.8]},air:{aqiRange:[70,160],co2Range:[410,428],tempRange:[12,46]}},
+      'Pune':{lat:18.5204,lng:73.8567,climate:'sub_tropical',soil:{phRange:[6.2,7.6],organicRange:[2.0,4.0],moistureRange:[30,55],type:'clay loam'},water:{phRange:[6.8,7.5],tdsRange:[150,450],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,130],co2Range:[408,425],tempRange:[12,38]}},
+      'Nashik':{lat:19.9975,lng:73.7898,climate:'sub_tropical',soil:{phRange:[6.2,7.5],organicRange:[2.2,4.2],moistureRange:[32,58],type:'clay loam'},water:{phRange:[6.8,7.4],tdsRange:[160,420],nitrateRange:[0.2,0.7]},air:{aqiRange:[50,120],co2Range:[408,424],tempRange:[10,39]}},
+      'Hyderabad':{lat:17.3850,lng:78.4867,climate:'sub_tropical',soil:{phRange:[6.0,7.5],organicRange:[1.5,3.5],moistureRange:[25,50],type:'sandy loam'},water:{phRange:[7.0,7.8],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[16,42]}},
+
+      // Western Arid & Semi-Arid (Rajasthan, Gujarat)
+      'Jaipur':{lat:26.9124,lng:75.7873,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.3,1.0],moistureRange:[5,20],type:'sandy soil'},water:{phRange:[7.5,8.5],tdsRange:[500,1500],nitrateRange:[0.5,2.0]},air:{aqiRange:[80,200],co2Range:[410,428],tempRange:[8,45]}},
+      'Jodhpur':{lat:26.2389,lng:73.0243,climate:'arid_desert',soil:{phRange:[7.8,9.2],organicRange:[0.2,0.8],moistureRange:[4,16],type:'sandy soil'},water:{phRange:[7.6,8.6],tdsRange:[600,1800],nitrateRange:[0.6,2.2]},air:{aqiRange:[70,180],co2Range:[410,426],tempRange:[7,46]}},
+      'Ahmedabad':{lat:23.0225,lng:72.5714,climate:'arid_desert',soil:{phRange:[7.0,8.5],organicRange:[0.5,1.5],moistureRange:[10,25],type:'sandy loam'},water:{phRange:[7.2,8.0],tdsRange:[400,1200],nitrateRange:[0.4,1.5]},air:{aqiRange:[80,180],co2Range:[411,428],tempRange:[10,45]}},
+
+      // Eastern / Deltaic & North East
+      'Kolkata':{lat:22.5726,lng:88.3639,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.5],moistureRange:[50,75],type:'alluvial soil'},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.8]},air:{aqiRange:[80,200],co2Range:[412,430],tempRange:[15,38]}},
+      'Bhubaneswar':{lat:20.2961,lng:85.8245,climate:'tropical',soil:{phRange:[5.4,6.8],organicRange:[2.0,4.2],moistureRange:[45,72],type:'alluvial soil'},water:{phRange:[6.6,7.4],tdsRange:[120,380],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,160],co2Range:[410,426],tempRange:[16,42]}},
+      'Guwahati':{lat:26.1445,lng:91.7362,climate:'tropical',soil:{phRange:[4.8,6.2],organicRange:[2.8,5.2],moistureRange:[55,80],type:'clay loam'},water:{phRange:[6.4,7.2],tdsRange:[80,260],nitrateRange:[0.1,0.6]},air:{aqiRange:[40,110],co2Range:[406,420],tempRange:[10,36]}},
+
+      // Southern Peninsula & Coastal
+      'Mumbai':{lat:19.0760,lng:72.8777,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.0,4.0],moistureRange:[45,70],type:'loam'},water:{phRange:[6.5,7.5],tdsRange:[100,300],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[18,38]}},
+      'Bangalore':{lat:12.9716,lng:77.5946,climate:'temperate',soil:{phRange:[5.8,7.2],organicRange:[2.5,4.5],moistureRange:[35,60],type:'sandy loam'},water:{phRange:[6.8,7.4],tdsRange:[150,400],nitrateRange:[0.2,0.8]},air:{aqiRange:[50,120],co2Range:[408,422],tempRange:[15,35]}},
+      'Chennai':{lat:13.0827,lng:80.2707,climate:'tropical',soil:{phRange:[5.5,7.5],organicRange:[1.5,3.5],moistureRange:[30,55],type:'sandy loam'},water:{phRange:[6.8,7.6],tdsRange:[200,600],nitrateRange:[0.3,0.9]},air:{aqiRange:[60,150],co2Range:[410,425],tempRange:[22,40]}},
+      'Coimbatore':{lat:11.0168,lng:76.9558,climate:'sub_tropical',soil:{phRange:[6.2,7.8],organicRange:[1.8,3.8],moistureRange:[28,52],type:'loam'},water:{phRange:[6.9,7.6],tdsRange:[180,480],nitrateRange:[0.2,0.8]},air:{aqiRange:[40,110],co2Range:[408,422],tempRange:[18,38]}},
+      'Kochi':{lat:9.9312,lng:76.2673,climate:'tropical',soil:{phRange:[4.8,6.4],organicRange:[2.8,5.0],moistureRange:[55,80],type:'loam'},water:{phRange:[6.4,7.2],tdsRange:[90,280],nitrateRange:[0.1,0.6]},air:{aqiRange:[35,90],co2Range:[406,420],tempRange:[22,36]}},
+
+      // Himalayan & Northern Temperate
+      'Shimla':{lat:31.1048,lng:77.1734,climate:'temperate',soil:{phRange:[5.4,6.8],organicRange:[3.0,6.0],moistureRange:[35,65],type:'loam'},water:{phRange:[6.7,7.3],tdsRange:[70,220],nitrateRange:[0.1,0.5]},air:{aqiRange:[25,75],co2Range:[405,418],tempRange:[-2,28]}},
+      'Srinagar':{lat:34.0837,lng:74.7973,climate:'temperate',soil:{phRange:[5.8,7.2],organicRange:[3.2,6.2],moistureRange:[35,65],type:'clay loam'},water:{phRange:[6.8,7.4],tdsRange:[80,240],nitrateRange:[0.1,0.5]},air:{aqiRange:[30,85],co2Range:[406,420],tempRange:[-5,32]}},
+
+      // Neighboring & Global References
+      'Lahore':{lat:31.5204,lng:74.3587,climate:'fertile_plains',soil:{phRange:[6.5,7.8],organicRange:[2.0,4.0],moistureRange:[30,55],type:'alluvial soil'},water:{phRange:[7.0,7.6],tdsRange:[200,500],nitrateRange:[0.4,1.0]},air:{aqiRange:[100,250],co2Range:[412,435],tempRange:[6,42]}},
+      'Dhaka':{lat:23.8103,lng:90.4125,climate:'tropical',soil:{phRange:[5.5,7.0],organicRange:[2.5,4.5],moistureRange:[55,80],type:'alluvial soil'},water:{phRange:[6.5,7.5],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[80,250],co2Range:[412,432],tempRange:[18,38]}},
+      'Nairobi':{lat:-1.2921,lng:36.8219,climate:'temperate',soil:{phRange:[5.5,7.0],organicRange:[2.5,5.0],moistureRange:[35,60],type:'loam'},water:{phRange:[6.8,7.4],tdsRange:[100,300],nitrateRange:[0.1,0.5]},air:{aqiRange:[30,80],co2Range:[406,420],tempRange:[12,28]}},
+      'Cairo':{lat:30.0444,lng:31.2357,climate:'arid_desert',soil:{phRange:[7.5,9.0],organicRange:[0.1,0.5],moistureRange:[2,10],type:'sandy soil'},water:{phRange:[7.5,8.5],tdsRange:[500,2000],nitrateRange:[0.5,2.5]},air:{aqiRange:[100,300],co2Range:[412,435],tempRange:[12,42]}},
+      'Bangkok':{lat:13.7563,lng:100.5018,climate:'tropical',soil:{phRange:[5.0,6.5],organicRange:[2.5,4.5],moistureRange:[55,80],type:'clay'},water:{phRange:[6.5,7.2],tdsRange:[100,350],nitrateRange:[0.2,0.7]},air:{aqiRange:[60,180],co2Range:[410,428],tempRange:[25,38]}},
     };
   }
   initCropDB(){
@@ -5230,9 +5257,12 @@ class CityBasedAgriculturalData {
     const ndvi=Math.round(rng(0.3,0.9)*100)/100;
     const zoneNames={fertile_plains:'Fertile Plains',sub_tropical:'Sub-Tropical',arid_desert:'Arid/Desert',coastal_arid:'Coastal Arid',mediterranean:'Mediterranean',tropical:'Tropical',temperate:'Temperate'};
 
+    const soilType=cityData.soil.type||'sandy loam';
+    const displayRegion=address?(address.split(',')[0].trim()||nearest.name):nearest.name;
+
     const farmData={
-      region:nearest.name,zoneName:zoneNames[cityData.climate]||'Temperate',zone:cityData.climate,
-      soil:{ph,organicMatter:organic,moisture,type:'sandy loam',nitrogen:Math.round(rng(20,80))},
+      region:displayRegion,zoneName:zoneNames[cityData.climate]||'Temperate',zone:cityData.climate,
+      soil:{ph,organicMatter:organic,moisture,type:soilType,nitrogen:Math.round(rng(20,80))},
       water:{ph:waterPh,tds,nitrates,quality:tds<500?'Good':'Fair'},
       air:{aqi,co2,temperature:temp,humidity,windSpeed:Math.round(rng(2,8)*10)/10},
       ndvi:{ndvi,vegetationHealth:ndvi>0.7?'Excellent':ndvi>0.5?'Good':'Moderate'},
@@ -6714,6 +6744,9 @@ async function fetchOpenMeteoWeather(lat,lng){
         currentFarmData.air.precipitation=c.precipitation;
         updateFarmDisplayValues();
         if(windChart) updateWindChart();
+        if(locGen && locGen.cropRecommender && locGen.cropDatabase){
+          currentFarmData.crops=locGen.cropRecommender.getOptimalCrops(locGen.cropDatabase,currentFarmData,currentFarmData.zone);
+        }
         updateCarousel();
       }
       document.getElementById('radar-toggle-btn').style.display='block';
@@ -7766,19 +7799,29 @@ async function pdxDetectRemote(dataUrl, onStage){
 async function pdxDetectHeuristic(dataUrl){
   const colors=await analyzeImageColors(dataUrl);
   const cropPrefix=pdxSelectedCrop||'Tomato';
-  let guess,score;
-  if(colors.greenPct>35&&colors.brownPct<8&&colors.yellowPct<8&&colors.darkPct<8){
-    guess=cropPrefix+'___healthy'; score=Math.min(0.85,0.6+colors.greenPct/300);
-  }else if(colors.brownPct>8&&colors.darkPct>5){
-    guess=cropPrefix+'___Early_blight'; score=Math.min(0.6,0.35+colors.brownPct/100);
-  }else if(colors.yellowPct>8){
-    guess=cropPrefix+'___Yellow_Leaf_Curl_Virus'; score=Math.min(0.55,0.3+colors.yellowPct/100);
-  }else if(colors.whitePct>8){
-    guess=cropPrefix+'___Powdery_mildew'; score=Math.min(0.55,0.3+colors.whitePct/100);
-  }else{
-    guess=cropPrefix+'___Early_blight'; score=0.4;
+  const candidates=[];
+  if(colors.greenPct>40&&colors.brownPct<6&&colors.yellowPct<6){
+    const healthyScore=Math.min(0.88,0.65+colors.greenPct/300);
+    candidates.push({label:`${cropPrefix}_healthy`,score:healthyScore});
+  } else if(colors.brownPct>12){
+    candidates.push({label:`${cropPrefix}_Late_Blight`,score:Math.min(0.72,0.45+colors.brownPct/100)});
+    candidates.push({label:`${cropPrefix}_Early_Blight`,score:Math.min(0.55,0.35+colors.brownPct/120)});
+  } else if(colors.yellowPct>10){
+    candidates.push({label:`${cropPrefix}_Tomato_Yellow_Leaf_Curl_Virus`,score:Math.min(0.68,0.4+colors.yellowPct/100)});
+    candidates.push({label:`${cropPrefix}_Bacterial_Spot`,score:0.42});
+  } else if(colors.whitePct>10){
+    candidates.push({label:`${cropPrefix}_Leaf_Mold`,score:Math.min(0.65,0.38+colors.whitePct/100)});
+    candidates.push({label:`${cropPrefix}_Septoria_Leaf_Spot`,score:0.41});
+  } else {
+    candidates.push({label:`${cropPrefix}_Bacterial_Spot`,score:0.52});
+    candidates.push({label:`${cropPrefix}_Early_Blight`,score:0.41});
   }
-  return {topK:[{label:guess,score}],source:'heuristic'};
+  // Fallback to valid PDX_CLASSES
+  const validated=candidates.map(c=>{
+    const exists=PDX_CLASSES[c.label]||PDX_CLASSES[c.label.replace('___','_')];
+    return {label:exists?c.label:`${cropPrefix}_Early_Blight`,score:c.score};
+  });
+  return {topK:validated,source:'heuristic'};
 }
 
 /* ---- Crop filter: keep only predictions matching the chosen crop, renormalise ---- */
